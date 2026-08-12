@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug example.md.html",
+      "file": "${workspaceFolder}/example.md.html",
+      "preLaunchTask": "Build: Development",
+      "sourceMaps": true,
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug current Vitest file",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "vitest", "run", "${file}"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Playwright",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "playwright", "test", "--debug"],
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build: Development",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
+

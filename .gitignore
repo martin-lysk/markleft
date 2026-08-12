@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+playwright-report/
+test-results/
+*.map
+.DS_Store
+local-md.js
+bookmark.txt
+bookmarklet.txt

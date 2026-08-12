@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="title desc">
+  <title id="title">Pelican riding a bicycle</title>
+  <desc id="desc">A cheerful white pelican pedals a teal bicycle along a seaside path beneath a warm sun.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bfe9ff"/>
+      <stop offset="1" stop-color="#f5fbf4"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2aa7bd"/>
+      <stop offset="1" stop-color="#68c6c7"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#18333b" flood-opacity=".2"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="600" fill="url(#sky)"/>
+  <circle cx="790" cy="105" r="55" fill="#ffd166" opacity=".95"/>
+  <path d="M0 330 C150 300 285 350 430 322 S735 292 960 328 V440 H0Z" fill="url(#sea)"/>
+  <path d="M0 356 C140 340 250 378 390 350 S700 326 960 360" fill="none" stroke="#e8ffff" stroke-width="8" opacity=".8"/>
+  <path d="M0 430 Q250 410 480 438 T960 420 V600 H0Z" fill="#e6cf9d"/>
+  <path d="M0 492 Q250 465 480 493 T960 476" fill="none" stroke="#c09c62" stroke-width="7" stroke-dasharray="20 18" opacity=".55"/>
+
+  <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8">
+    <path d="M92 125 q18-17 36 0 q18-17 36 0"/>
+    <path d="M250 82 q15-14 30 0 q15-14 30 0"/>
+    <path d="M690 184 q14-13 28 0 q14-13 28 0"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <g fill="none" stroke="#163a43" stroke-width="12">
+      <circle cx="300" cy="475" r="91" fill="#f8fbf5" fill-opacity=".16"/>
+      <circle cx="690" cy="475" r="91" fill="#f8fbf5" fill-opacity=".16"/>
+    </g>
+    <g stroke="#7a9295" stroke-width="3" opacity=".75">
+      <path d="M300 384v182M209 475h182M236 411l128 128M236 539l128-128"/>
+      <path d="M690 384v182M599 475h182M626 411l128 128M626 539l128-128"/>
+    </g>
+
+    <g fill="none" stroke="#087f8c" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M300 475l128-18 86-121 62 139H300l86-139h128"/>
+      <path d="M576 475l114 0"/>
+      <path d="M514 336l-22-43"/>
+      <path d="M490 292h55"/>
+      <path d="M428 457l-18 43"/>
+      <path d="M398 506h35"/>
+      <path d="M514 336l84-18"/>
+      <path d="M598 318l24 20"/>
+    </g>
+    <circle cx="428" cy="457" r="17" fill="#f2a65a" stroke="#163a43" stroke-width="6"/>
+
+    <g>
+      <path d="M430 325 C382 285 384 211 440 174 C494 139 568 166 582 227 C594 280 553 335 489 348Z" fill="#f8f5e8" stroke="#294c54" stroke-width="7"/>
+      <path d="M445 309 C416 269 426 220 465 198 C495 181 533 189 549 216 C509 215 477 251 480 298Z" fill="#d9e5d1"/>
+      <path d="M475 337 C455 368 430 415 408 478" fill="none" stroke="#e7a24d" stroke-width="13" stroke-linecap="round"/>
+      <path d="M516 337 C500 369 474 405 449 434" fill="none" stroke="#e7a24d" stroke-width="13" stroke-linecap="round"/>
+      <path d="M395 479 q14-8 31 1" fill="none" stroke="#df8337" stroke-width="10" stroke-linecap="round"/>
+      <path d="M437 435 q14-8 30 1" fill="none" stroke="#df8337" stroke-width="10" stroke-linecap="round"/>
+
+      <path d="M428 457l-20 22M428 457l21-23" fill="none" stroke="#163a43" stroke-width="6" stroke-linecap="round"/>
+      <path d="M394 482h29M437 437h28" fill="none" stroke="#163a43" stroke-width="6" stroke-linecap="round"/>
+
+      <path d="M439 178 C414 149 416 103 446 78 C477 53 523 63 540 100 C554 132 537 168 505 185Z" fill="#fffdf3" stroke="#294c54" stroke-width="7"/>
+      <path d="M432 94 Q458 48 510 61 Q534 68 544 91 Q492 76 447 111Z" fill="#e63946" stroke="#294c54" stroke-width="7"/>
+      <path d="M445 87 Q472 62 511 69" fill="none" stroke="#fff" stroke-width="6" opacity=".9"/>
+      <circle cx="486" cy="105" r="9" fill="#163a43"/>
+      <circle cx="489" cy="102" r="3" fill="#fff"/>
+      <path d="M449 119 C403 113 348 128 304 157 C357 177 424 168 470 143Z" fill="#f4a261" stroke="#294c54" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M306 157 C353 155 408 148 465 134" fill="none" stroke="#d9773f" stroke-width="4" opacity=".8"/>
+      <path d="M451 148 C421 162 413 193 429 216 C456 211 481 191 489 167Z" fill="#f6bd60" stroke="#294c54" stroke-width="6"/>
+
+      <path d="M425 222 C382 230 348 262 334 303 C365 310 401 296 425 271" fill="#eef2df" stroke="#294c54" stroke-width="7"/>
+      <path d="M334 303 C354 288 377 276 405 269" fill="none" stroke="#cbd9c3" stroke-width="5"/>
+      <path d="M548 225 C581 235 603 263 608 297 C579 299 553 285 538 262" fill="#eef2df" stroke="#294c54" stroke-width="7"/>
+      <path d="M591 287 C604 305 611 319 615 337" fill="none" stroke="#e7a24d" stroke-width="11" stroke-linecap="round"/>
+      <path d="M420 195 Q485 225 563 205 L550 286 Q486 309 423 276Z" fill="#e63946" opacity=".88"/>
+      <path d="M451 207l67 73" fill="none" stroke="#fff" stroke-width="13" opacity=".95"/>
+    </g>
+
+    <g>
+      <path d="M626 349 h94 v58 h-94z" fill="#c9873f" stroke="#684b2e" stroke-width="6"/>
+      <path d="M634 357v42M653 357v42M672 357v42M691 357v42M710 357v42" stroke="#e4b56d" stroke-width="5"/>
+      <path d="M620 349 q52-40 105 0" fill="none" stroke="#684b2e" stroke-width="7"/>
+      <path d="M650 377 q18-29 38 0 q-18 19-38 0Z" fill="#a8dadc" stroke="#315b63" stroke-width="4"/>
+      <circle cx="680" cy="369" r="3" fill="#163a43"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#204b55" stroke-width="7" stroke-linecap="round" opacity=".55">
+    <path d="M155 266h105"/><path d="M125 292h118"/><path d="M168 318h76"/>
+  </g>
+
+  <text x="52" y="70" fill="#204b55" font-family="ui-rounded, system-ui, sans-serif" font-size="28" font-weight="700">Perry’s seaside sprint</text>
+</svg>

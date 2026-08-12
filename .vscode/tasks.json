@@ -1,0 +1,89 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install",
+      "type": "shell",
+      "command": "pnpm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build",
+      "type": "shell",
+      "command": "pnpm build",
+      "group": "build",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "Build: Development",
+      "type": "shell",
+      "command": "pnpm build:dev",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "Watch",
+      "type": "shell",
+      "command": "pnpm watch",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Unit Tests",
+      "type": "shell",
+      "command": "pnpm test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Unit Tests: Watch",
+      "type": "shell",
+      "command": "pnpm test:watch",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "E2E Tests",
+      "type": "shell",
+      "command": "pnpm test:e2e",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "E2E Tests: Headed",
+      "type": "shell",
+      "command": "pnpm test:e2e:headed",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Typecheck",
+      "type": "shell",
+      "command": "pnpm typecheck",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "Lint",
+      "type": "shell",
+      "command": "pnpm lint",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test All",
+      "type": "shell",
+      "command": "pnpm test:all",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Open Example",
+      "type": "shell",
+      "command": "pnpm open",
+      "problemMatcher": []
+    }
+  ]
+}
+

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">The MarkLeft document iteration loop</title>
+  <desc id="desc">Five connected steps show Markdown creation, visual annotation, saving, append-only AI suggestions, and human review looping back to annotation.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7f3e8"/><stop offset="1" stop-color="#e9f3ef"/></linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#34545b"/></marker>
+    <filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#18333b" flood-opacity=".16"/></filter>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="url(#bg)"/>
+  <g fill="none" stroke="#34545b" stroke-width="5" marker-end="url(#arrow)">
+    <path d="M224 182h74"/><path d="M454 182h74"/><path d="M684 182h74"/><path d="M914 182h72"/>
+    <path d="M1066 255v104c0 44-34 76-78 76H414c-44 0-76-32-76-76v-31"/>
+  </g>
+  <g font-family="ui-rounded,system-ui,sans-serif" text-anchor="middle" filter="url(#shadow)">
+    <g transform="translate(72 92)"><rect width="152" height="180" rx="22" fill="#fffdf7" stroke="#718e91" stroke-width="3"/><circle cx="76" cy="46" r="24" fill="#dcecf1"/><text x="76" y="54" font-size="24" font-weight="700" fill="#254750">0</text><text x="76" y="102" font-size="20" font-weight="700" fill="#254750">Create</text><text x="76" y="132" font-size="15" fill="#567078">Markdown</text><text x="76" y="154" font-size="15" fill="#567078">or bring your own</text></g>
+    <g transform="translate(302 92)"><rect width="152" height="180" rx="22" fill="#fffdf7" stroke="#d3824d" stroke-width="3"/><circle cx="76" cy="46" r="24" fill="#fde2c7"/><text x="76" y="54" font-size="24" font-weight="700" fill="#8a4728">1–2</text><text x="76" y="102" font-size="20" font-weight="700" fill="#254750">See &amp; mark</text><text x="76" y="132" font-size="15" fill="#567078">render the document</text><text x="76" y="154" font-size="15" fill="#567078">add precise comments</text></g>
+    <g transform="translate(532 92)"><rect width="152" height="180" rx="22" fill="#fffdf7" stroke="#718e91" stroke-width="3"/><circle cx="76" cy="46" r="24" fill="#dcecf1"/><text x="76" y="54" font-size="24" font-weight="700" fill="#254750">3</text><text x="76" y="102" font-size="20" font-weight="700" fill="#254750">Save</text><text x="76" y="132" font-size="15" fill="#567078">annotations travel</text><text x="76" y="154" font-size="15" fill="#567078">inside the .md file</text></g>
+    <g transform="translate(762 92)"><rect width="152" height="180" rx="22" fill="#fffdf7" stroke="#6f66c7" stroke-width="3"/><circle cx="76" cy="46" r="24" fill="#e5e1ff"/><text x="76" y="54" font-size="24" font-weight="700" fill="#5146a3">4</text><text x="76" y="102" font-size="20" font-weight="700" fill="#254750">AI suggests</text><text x="76" y="132" font-size="15" fill="#567078">append-only changes</text><text x="76" y="154" font-size="15" fill="#567078">address comments</text></g>
+    <g transform="translate(990 92)"><rect width="152" height="180" rx="22" fill="#fffdf7" stroke="#4b9a72" stroke-width="3"/><circle cx="76" cy="46" r="24" fill="#d9f0e1"/><text x="76" y="54" font-size="24" font-weight="700" fill="#347150">5</text><text x="76" y="102" font-size="20" font-weight="700" fill="#254750">Review</text><text x="76" y="132" font-size="15" fill="#567078">accept, reject,</text><text x="76" y="154" font-size="15" fill="#567078">or refine intent</text></g>
+  </g>
+  <text x="702" y="467" text-anchor="middle" font-family="ui-rounded,system-ui,sans-serif" font-size="18" font-weight="700" fill="#34545b">Repeat until the suggestion meets the intent</text>
+</svg>

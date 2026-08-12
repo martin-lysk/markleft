@@ -1,0 +1,136 @@
+---
+title: GFM AI Feedback Test
+tags:
+  - local-md
+  - gfm
+  - ai-feedback
+status: draft
+reviewers:
+  - human
+  - llm
+---
+
+<!--
+local-md notes:
+[^range-prev-9-chars-48217-a1b2] marks the 9 visible non-whitespace text characters before this footnote reference.
+[^range-next-9-chars-48217-a1b2] marks the 9 visible non-whitespace text characters after this footnote reference.
+[^block-48217-a1b2] marks the containing block.
+[^image-5000-5000-48217-a1b2] marks a bitmap image point at normalized x/y coordinates.
+[^svg-path-5000-5000-48217-a1b2] marks an inline SVG element path and normalized x/y coordinates.
+Markdown formatting, whitespace, and local-md note references do not count as anchor characters.
+Hashes use normalized rendered text, including visible whitespace.
+-->
+
+<script src="local-md.js"></script><textarea>
+
+# GFM AI Feedback Test
+
+This document is intentionally dense: it gives an AI-generated Markdown draft many places where a reviewer might leave precise feedback. It includes prose, tables, task lists, links, footnotes, images, HTML, Mermaid, and edge cases around punctuation, formatting, and references.
+
+## Review Targets
+
+- [x] Keep the executive summary short and actionable.
+- [ ] Verify all links and image references.
+- [ ] Check whether tables remain readable on narrow screens.
+- [ ] Confirm the Mermaid diagram is useful even when rendered as a code block.
+
+## Formatting Mix
+
+The same sentence mixes **bold claims**, _soft emphasis_, `inline code`, ~~removed wording~~, <kbd>keyboard hints</kbd>, and a regular footnote reference.
+
+Autolinks should stay clickable: <https://github.github.com/gfm/>
+
+Raw URL text should remain readable: <https://github.com/openai>
+
+## External SVG
+
+![AI feedback flow diagram](gfm-ai-feedback-diagram.svg)
+
+The SVG above is a sibling file, not inline markup. This is useful for checking whether an AI keeps local asset paths stable when editing Markdown.
+
+## Normal Image
+
+![Unsplash photo used as a normal remote Markdown image](https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format\&fit=crop\&w=1200\&q=80)
+
+This remote bitmap image tests ordinary image syntax, alt text, and whether an AI accidentally rewrites long URLs.
+
+## Tables
+
+| Feature | Good AI Behavior | Reviewer Feedback Prompt |
+| --- | --- | --- |
+| Tables | Keeps pipes and alignment valid | Select across cells and leave a range comment |
+| Task lists | Preserves checkbox state | Ask the AI to split broad tasks |
+| Images | Leaves alt text meaningful | Ask for better accessibility wording |
+| Links | Keeps reference targets intact | Flag dead or vague links |
+
+| Left | Center | Right |
+| :--- | :---: | ---: |
+| Alpha | Beta | Gamma |
+| 1 | 2 | 3 |
+
+## Blockquotes
+
+> A quoted recommendation can span multiple paragraphs.
+> 
+> Reviewers often need to select from the end of one quoted paragraph into the beginning of the next.
+
+## Code
+
+Inline JSON: `{"status":"draft","reviewed":false}`
+
+``` js
+const review = {
+  audience: "LLM plus human reviewer",
+  risk: "format drift",
+  checks: ["tables", "links", "images", "comments"],
+};
+
+console.log(review.checks.join(", "));
+```
+
+``` diff
+- The answer is probably good enough.
++ The answer needs a concrete source and a tighter claim.
+```
+
+## Mermaid
+
+``` mermaid
+flowchart LR
+  A[AI draft] --> B{Human review}
+  B -->|needs work| C[Range comment]
+  C --> D[AI revision]
+  D --> B
+  B -->|approved| E[Publish]
+```
+
+## HTML Inside Markdown
+
+<details>
+<summary>Expandable review checklist</summary>
+
+- Does the document still render after editing?
+- Are comments anchored to the intended visible text?
+- Did the AI preserve frontmatter?
+
+</details>
+
+<mark>Highlighted HTML text</mark> can sit beside Markdown emphasis like **this**.
+
+## Reference Links
+
+This paragraph uses a [reference-style link](https://github.github.com/gfm/), an inline [OpenAI link](https://openai.com/), and an image reference below.
+
+![Small placeholder image](https://placehold.co/160x90/png?text=GFM)
+
+## Footnotes
+
+Ordinary footnotes should continue to render as footnotes and not be confused with local-md comments.
+
+Dangling local-md comment definitions are useful as unresolved review notes for AI consumers.
+
+<span></span>
+
+<span></span>
+
+<span></span>

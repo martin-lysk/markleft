@@ -1,0 +1,26 @@
+{
+  "name": "html comment between paragraphs",
+  "description": "HTML comments such as Docusaurus truncate markers are source blocks, not invisible gaps that absorb following annotations.",
+  "markdown": "# Making NFS3 reactive\n\nNetwork File System (NFS) **provides** a powerful way to build a vfs on OSx.\n\n<!-- truncate -->\n\nThe topic outlined here is part of a bigger research note.\n",
+  "blocks": [
+    {
+      "kind": "heading",
+      "markdown": "# Making NFS3 reactive"
+    },
+    {
+      "kind": "paragraph",
+      "markdown": "Network File System (NFS) **provides** a powerful way to build a vfs on OSx."
+    },
+    {
+      "kind": "html-comment",
+      "markdown": "<!-- truncate -->"
+    },
+    {
+      "kind": "paragraph",
+      "markdown": "The topic outlined here is part of a bigger research note."
+    }
+  ],
+  "renderRoundtrip": {
+    "expectedMarkdown": "# Making NFS3 reactive\n\nNetwork File System (NFS) **provides** a powerful way to build a vfs on OSx.\n\n<!-- truncate -->\n\nThe topic outlined here is part of a bigger research note."
+  }
+}

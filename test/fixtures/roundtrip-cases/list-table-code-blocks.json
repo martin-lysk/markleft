@@ -1,0 +1,23 @@
+{
+  "name": "compound markdown blocks",
+  "description": "Lists, tables, blockquotes, and fenced code are each treated as one replaceable source block.",
+  "markdown": "- First item\n- Second item\n  continued\n- Third item\n\n| Feature | Result |\n| --- | --- |\n| Tables | Supported |\n\n> Quote one\n>\n> Quote two\n\n```js\nconsole.log(\"hello\");\n```\n",
+  "blocks": [
+    {
+      "kind": "list",
+      "markdown": "- First item\n- Second item\n  continued\n- Third item"
+    },
+    {
+      "kind": "table",
+      "markdown": "| Feature | Result |\n| --- | --- |\n| Tables | Supported |"
+    },
+    {
+      "kind": "blockquote",
+      "markdown": "> Quote one\n>\n> Quote two"
+    },
+    {
+      "kind": "code",
+      "markdown": "```js\nconsole.log(\"hello\");\n```"
+    }
+  ]
+}

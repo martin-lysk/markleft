@@ -1,0 +1,56 @@
+{
+  "name": "markleft-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "build:bookmarklet": "node build-bookmarklet.mjs",
+    "build:dev": "node build.mjs --development",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "pnpm build:dev && playwright test",
+    "test:e2e:ui": "pnpm build:dev && playwright test --ui",
+    "test:e2e:headed": "pnpm build:dev && playwright test --headed",
+    "test:all": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e",
+    "case:roundtrip": "node scripts/create-roundtrip-case.mjs",
+    "open": "open example.md.html",
+    "dev": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "mermaid": "^11.16.0",
+    "rehype-parse": "^9.0.1",
+    "rehype-remark": "^10.0.1",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/jsdom": "^28.0.3",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "esbuild": "^0.25.8",
+    "eslint": "^9.32.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.2",
+    "type-fest": "^5.8.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
+  }
+}
