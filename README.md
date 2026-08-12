@@ -53,8 +53,14 @@ TODO describe markleft schema
 The editor currently starts as a Bookmarklet in chrome. 
 1. Drag this link to the bookmarks
 2. Open a local Markdown file in the browser
-3. Click on the bookmarklet - and edit the file
-4. To save the file the app will ask for permission to read and write the parent folder
+3. Click on the bookmarklet - and annotate the *.md file
+4. To save the file - the app will ask for permission to read and write the parent folder
+5. Copy the prompt and let ai fix address your annotations
+6. See what AI suggests - and review the new changes
+
+### Using a local Bookmark
+
+
 
 <!-- markleft:block id="b766a788" -->
 ## Status
