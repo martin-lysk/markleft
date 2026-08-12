@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { loadMarkdown } from "../src/file/load";
+import { isFallbackGuide, loadMarkdown } from "../src/file/load";
 
 test("loads Markdown from the example bootstrap textarea", () => {
   document.body.innerHTML = `<textarea data-testid="bootstrap-source">
@@ -43,4 +43,10 @@ test("does not confuse the runtime editor for the bootstrap textarea", () => {
   `;
 
   expect(loadMarkdown(document)).toBe("");
+});
+
+test("recognizes the bookmarklet's non-Markdown fallback guide", () => {
+  document.head.innerHTML = '<meta name="local-md-source" data-source-kind="no-markdown-guide">';
+
+  expect(isFallbackGuide(document)).toBe(true);
 });

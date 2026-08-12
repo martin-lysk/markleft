@@ -1,6 +1,6 @@
 import { gzipSync } from "node:zlib";
 import { build, context } from "esbuild";
-import { buildBookmarklet } from "./build-bookmarklet.mjs";
+import { buildBookmarklet, buildBookmarkLoader } from "./build-bookmarklet.mjs";
 
 const args = new Set(process.argv.slice(2));
 const development = args.has("--development") || args.has("--watch");
@@ -29,6 +29,7 @@ const options = {
 
 if (watch) {
   const ctx = await context(options);
+  await buildBookmarkLoader({ outfile: "pages/bookmark.js" });
   const bookmarkletBytes = await buildBookmarklet();
   await ctx.watch();
   console.log(`bookmarklet.txt: ${bookmarkletBytes} bytes`);
@@ -37,6 +38,7 @@ if (watch) {
   const result = await build({ ...options, metafile: true });
   const output = result.outputFiles?.[0];
   const fs = await import("node:fs/promises");
+  await fs.mkdir("pages", { recursive: true });
   if (!development) {
     await fs.rm("local-md.js.map", { force: true });
   }
@@ -48,6 +50,8 @@ if (watch) {
     console.log(`development build written: ${bytes} bytes`);
   }
   const bookmarkletBytes = await buildBookmarklet();
+  await fs.copyFile("local-md.js", "pages/local-md.js");
+  await buildBookmarkLoader({ outfile: "pages/bookmark.js" });
   console.log(`bookmarklet.txt: ${bookmarkletBytes} bytes`);
   void output;
 }

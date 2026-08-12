@@ -34,7 +34,7 @@ jobs:
           LOCAL_MD_LOADER_URL: https://martin-lysk.github.io/markleft/local-md.js
       - run: |
           mkdir pages
-          cp bookmark.js local-md.js bookmarklet.txt pages/
+          cp local-md.js bookmarklet.txt pages/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: pages

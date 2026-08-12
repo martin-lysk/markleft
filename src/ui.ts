@@ -96,6 +96,11 @@ interface AppState extends SyncState {
   composing: boolean;
   activeCommentId: string | null;
   includeBlockIds: boolean;
+  isFallbackGuide: boolean;
+}
+
+interface MountAppOptions {
+  isFallbackGuide?: boolean;
 }
 
 type ReviewDiffMode = "active" | "all" | "none";
@@ -172,7 +177,11 @@ For every actionable annotation, append a suggestion footnote definition at the 
 Use a new unique s... suggestion id for every proposal and a new unique comment-NNNNN id for every reply. The final reference-only paragraph in a suggestion is association metadata and is not part of the proposed content. Every continuation line of a suggestion or reply footnote, including blank lines and relation metadata, must be indented by four spaces so it remains inside the footnote definition. For multiline block Markdown such as tables, put no content after the definition colon and indent every content line by four spaces. Emit a separate local suggestion for every affected block. Preserve every existing annotation definition and every original body anchor; excluding anchors from replacement content does not authorize removing them from the existing document. Finish only after the appended reply and suggestion definitions have been written to the Markdown file and all actionable annotations are addressed.`;
 }
 
-export async function mountApp(markdown: string, development: boolean): Promise<void> {
+export async function mountApp(
+  markdown: string,
+  development: boolean,
+  options: MountAppOptions = {},
+): Promise<void> {
   const parts = splitFrontmatter(markdown);
   const state: AppState = {
     markdown: composeMarkdown(parts),
@@ -186,6 +195,7 @@ export async function mountApp(markdown: string, development: boolean): Promise<
     composing: false,
     activeCommentId: null,
     includeBlockIds: true,
+    isFallbackGuide: options.isFallbackGuide === true,
   };
   const analyzeReview = createReviewAnalysisCache();
   const draftCommentIds = new Set<string>();
@@ -368,6 +378,19 @@ export async function mountApp(markdown: string, development: boolean): Promise<
     </section>
   `;
 
+  const repositoryCta = document.createElement("aside");
+  repositoryCta.className = "local-md-repository-cta";
+  repositoryCta.innerHTML = `
+    <button type="button" class="local-md-repository-cta-close" aria-label="Hide repository link" title="Hide">×</button>
+    <span>Feedback or want to share your love with a star?</span>
+    <a href="https://github.com/martin-lysk/markleft" target="_blank" rel="noopener">
+      github.com/martin-lysk/markleft
+    </a>
+  `;
+  repositoryCta
+    .querySelector<HTMLButtonElement>(".local-md-repository-cta-close")
+    ?.addEventListener("click", () => repositoryCta.remove());
+
   const llmPrompt = document.createElement("section");
   llmPrompt.className = "local-md-llm-prompt";
   llmPrompt.dataset.testid = "llm-prompt";
@@ -394,7 +417,7 @@ export async function mountApp(markdown: string, development: boolean): Promise<
 
   documentPane.append(frontmatterHeader, rendered, markdownLayer);
   workspace.append(documentPane, commentsColumn);
-  shell.append(properties, workspace, selectionToolbar, llmPrompt, toastRegion);
+  shell.append(properties, workspace, selectionToolbar, llmPrompt, toastRegion, repositoryCta);
   document.body.replaceChildren(shell);
 
   const status = required("[data-testid='save-status']");
@@ -566,6 +589,7 @@ export async function mountApp(markdown: string, development: boolean): Promise<
     if (state.mode === "review") await applyReviewSuggestions(rendered, state.body);
     paintReviewDiffHighlights();
     makeEditable(rendered);
+    if (state.isFallbackGuide) installFallbackBookmarkletControl(rendered);
     stampBlocks(rendered, state.includeBlockIds ? documentBlockIds(state.body) : []);
     decorateRenderedComments(rendered, state.body, state.activeCommentId);
     positionImageCommentAnchors(rendered, state, activateReviewSuggestionForComment);
@@ -5089,4 +5113,45 @@ function hasDirectoryPicker(win: Window): boolean {
 
 function logFileHandling(message: string, details: Record<string, unknown> = {}): void {
   console.info("[local-md:file]", message, details);
+}
+
+function installFallbackBookmarkletControl(root: HTMLElement): void {
+  const link = root.querySelector<HTMLAnchorElement>('a[href^="javascript:"]');
+  if (!link) return;
+
+  link.classList.add("local-md-bookmarklet-install");
+  link.contentEditable = "false";
+  link.draggable = true;
+  link.title = "Drag this link to your bookmarks bar";
+
+  const hintId = "local-md-bookmarklet-drag-hint";
+  let hint = root.querySelector<HTMLElement>(`#${hintId}`);
+  if (!hint) {
+    hint = document.createElement("span");
+    hint.id = hintId;
+    hint.className = "local-md-bookmarklet-drag-hint";
+    hint.hidden = true;
+    hint.setAttribute("role", "status");
+    link.after(hint);
+  }
+  link.setAttribute("aria-describedby", hintId);
+
+  const showDragHint = (event: Event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    link.classList.remove("local-md-bookmarklet-install-shake");
+    void link.offsetWidth;
+    link.classList.add("local-md-bookmarklet-install-shake");
+    hint.hidden = false;
+    hint.textContent = "Drag me to your bookmarks bar";
+  };
+
+  link.addEventListener("click", showDragHint, { capture: true });
+  link.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key === "Enter" || event.key === " ") showDragHint(event);
+    },
+    { capture: true },
+  );
 }

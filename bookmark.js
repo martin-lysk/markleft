@@ -1,6 +1,7 @@
 (function () {
   var version = "v6";
   var loaderUrl = "file:///Users/martinlysk/Documents/rendered-md/local-md.js";
+  var noMarkdownSource = /* __MARKLEFT_NO_MARKDOWN_SOURCE__ */ "";
   var loadingScript = document.currentScript;
   if (loadingScript && loadingScript.src) {
     var loadingScriptUrl = new URL(loadingScript.src);
@@ -90,6 +91,10 @@
     };
   }
 
+  function isMarkdownDocument() {
+    return /\.(?:md|markdown|mdown|mkdn)(?:\.html)?$/i.test(window.location.pathname);
+  }
+
   function currentSource() {
     var bootstrap = document.querySelector(
       "textarea[data-testid='bootstrap-source'],body>textarea:first-of-type",
@@ -115,6 +120,14 @@
       };
     }
 
+    if (!isMarkdownDocument() && noMarkdownSource) {
+      return {
+        kind: "no-markdown-guide",
+        technique: "bundled no-markdown.md",
+        text: noMarkdownSource,
+      };
+    }
+
     var pageSource = pageText();
     return {
       kind: "page",
@@ -135,7 +148,27 @@
     script.dataset.sourceHash = sourceHash;
     script.dataset.sourceLength = String(sourceLength);
     script.src = loaderUrl;
+    var readyTimer;
+    var showLoadError = function () {
+      var spinner = document.querySelector(".local-md-loading-spinner");
+      var copy = document.querySelector(".local-md-loading-copy");
+      if (spinner) spinner.style.display = "none";
+      if (copy) {
+        copy.innerHTML =
+          'Couldn\'t finish opening Markleft. Check your connection, then <a href="https://github.com/martin-lysk/markleft" target="_blank" rel="noopener">check for updates or file an issue</a>.';
+      }
+    };
+    var markReady = function () {
+      window.clearTimeout(readyTimer);
+      window.removeEventListener("markleft:ready", markReady);
+    };
+    window.addEventListener("markleft:ready", markReady);
+    script.onerror = function () {
+      window.clearTimeout(readyTimer);
+      showLoadError();
+    };
     (document.body || document.documentElement).appendChild(script);
+    readyTimer = window.setTimeout(showLoadError, 15000);
   }
 
   function wrapSource(source) {
@@ -155,9 +188,22 @@
         sourceHashAttribute +
         '" data-source-length="' +
         sourceLength +
+        '" data-source-kind="' +
+        escapeAttribute(source.kind) +
         '">';
       var textarea = '<textarea data-testid="bootstrap-source">';
       var textareaClose = "</textarea>";
+      var loadingScreen =
+        "<style>" +
+        'body{margin:0;min-height:100vh;background:#ebe8dc;color:#141414;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}' +
+        ".local-md-loading{min-height:100vh;display:grid;place-items:center;padding:24px}" +
+        ".local-md-loading-card{display:grid;justify-items:center;gap:14px;max-width:340px;text-align:center;padding:34px;border:1px solid #cfc6b7;border-radius:12px;background:#fffefa;box-shadow:0 10px 28px rgb(20 20 20 / 8%)}" +
+        ".local-md-loading-spinner{width:32px;height:32px;border:3px solid #e3dccf;border-top-color:#3b4b59;border-radius:50%;animation:local-md-loading-spin .75s linear infinite}" +
+        ".local-md-loading-title{font-weight:700;font-size:18px}.local-md-loading-copy{color:#686256;font-size:14px;line-height:1.45}.local-md-loading-copy a{color:#3b4b59;font-weight:700}" +
+        'textarea[data-testid="bootstrap-source"]{display:none}' +
+        "@keyframes local-md-loading-spin{to{transform:rotate(360deg)}}" +
+        "</style>" +
+        '<main class="local-md-loading" role="status" aria-live="polite"><section class="local-md-loading-card"><span class="local-md-loading-spinner" aria-hidden="true"></span><strong class="local-md-loading-title">Opening Markleft</strong><span class="local-md-loading-copy">Preparing your local Markdown editor…</span></section></main>';
       var frontmatter = frontmatterMatch(source.text);
       var markdown = source.text;
 
@@ -166,13 +212,20 @@
         return {
           hash: sourceHash,
           length: sourceLength,
-          html: frontmatter[0] + "\n" + meta + textarea + escapeTextarea(markdown) + textareaClose,
+          html:
+            frontmatter[0] +
+            "\n" +
+            meta +
+            loadingScreen +
+            textarea +
+            escapeTextarea(markdown) +
+            textareaClose,
         };
       }
       return {
         hash: sourceHash,
         length: sourceLength,
-        html: meta + textarea + escapeTextarea(markdown) + textareaClose,
+        html: meta + loadingScreen + textarea + escapeTextarea(markdown) + textareaClose,
       };
     });
   }

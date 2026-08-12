@@ -9,6 +9,13 @@ export function loadMarkdown(doc: Document = document): string {
   return `${frontmatter}${body}`;
 }
 
+export function isFallbackGuide(doc: Document = document): boolean {
+  return (
+    doc.querySelector('meta[name="local-md-source"]')?.getAttribute("data-source-kind") ===
+    "no-markdown-guide"
+  );
+}
+
 function readPreludeFrontmatter(doc: Document): string {
   const script = doc.querySelector<HTMLScriptElement>('script[src$="local-md.js"]');
   if (!script?.parentNode) return "";

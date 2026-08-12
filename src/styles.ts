@@ -33,6 +33,37 @@ export const styles = `
   outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
   outline-offset: 2px;
 }
+.local-md-bookmarklet-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 3px;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: grab;
+  font-weight: 700;
+  text-decoration: none;
+  user-select: none;
+}
+.local-md-bookmarklet-install:active { cursor: grabbing; }
+.local-md-bookmarklet-install:hover { background: color-mix(in srgb, var(--accent-soft) 72%, white); }
+.local-md-bookmarklet-install-shake { animation: local-md-bookmarklet-shake 420ms ease-in-out; }
+.local-md-bookmarklet-drag-hint {
+  display: inline-block;
+  margin-left: 7px;
+  color: var(--muted);
+  font-size: 0.88em;
+  font-style: italic;
+}
+.local-md-bookmarklet-drag-hint[hidden] { display: none; }
+@keyframes local-md-bookmarklet-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
 body {
   margin: 0;
   min-height: 100vh;
@@ -338,6 +369,51 @@ button[data-testid="save"]:hover {
   gap: 8px;
   width: min(420px, calc(100vw - 36px));
   pointer-events: none;
+}
+.local-md-repository-cta {
+  position: fixed;
+  z-index: 60;
+  bottom: 18px;
+  left: 18px;
+  display: grid;
+  gap: 8px;
+  width: min(350px, calc(100vw - 36px));
+  padding: 12px 38px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.local-md-repository-cta a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.local-md-repository-cta a:hover { color: var(--accent-hover); }
+.local-md-repository-cta-close {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+}
+.local-md-repository-cta-close:hover {
+  background: var(--surface);
+  color: var(--ink);
 }
 .local-md-toast {
   display: flex;
