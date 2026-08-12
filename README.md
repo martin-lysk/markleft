@@ -1,79 +1,61 @@
+<!-- markleft:block id="b19149d2" -->
 # Markleft Editor
 
+<!-- markleft:block id="b0b91cc8" -->
 **Suggestion mode for Markdown—built for human review and AI-assisted revision.**
 
+<!-- markleft:block id="b74b1665" -->
 Markleft keeps comments, discussions, and proposed changes *in the Markdown file itself*. Open a local document, leave precise feedback on text, blocks, code, images, SVGs, tables, and Mermaid diagrams, then review AI suggestions in context before accepting them.
 
+<!-- markleft:block id="bd7cf28d" -->
 ![Markleft editor with anchored review comments](docs/assets/markleft-editor.png)
 
+<!-- markleft:block id="b66c9860" -->
 ## Why Markleft
 
+<!-- markleft:block id="b5c93645" -->
 AI drafts improve through iteration, but ordinary chat workflows lose the context that makes feedback useful: the exact phrase, block, visual detail, or intent behind a requested change. Markleft turns that feedback into durable, portable document data.
 
+<!-- markleft:block id="bf99e774" -->
 - **Point, don’t describe.** Anchor feedback to the exact content under review.
 - **Keep intent beside the work.** Comments and replies travel with the `.md` file.
 - **Review before applying.** AI changes arrive as individual suggestions, not an opaque rewrite.
 - **Stay compatible.** Markleft annotations are standard Markdown footnotes with reserved identifiers; unaware renderers still show readable footnotes.
 - **Work locally.** The editor runs in the browser against local Markdown files.
 
-![A Markleft review loop: annotate, propose, compare, accept](docs/assets/markleft-loop.svg)
+<!-- markleft:block id="b2a27b9e" -->
+<!-- markleft:block id="be8f9913" -->
+## The Format
 
-## The format
-
+<!-- markleft:block id="b5ba69ba" -->
 Markleft encodes review data in Markdown footnotes. A range comment, for example, is both readable Markdown and a precise instruction for a Markleft-aware editor or AI:
 
+<!-- markleft:block id="b0acbfae" -->
 ```markdown
-This sentence needs less ceremony.[^range-prev-12-chars-14824-a1b2]
+This sentence needs less ceremony.[^range-prev-12-chars-14824]
 
-[^range-prev-12-chars-14824-a1b2]: Make this more direct.
+[^range-prev-12-chars-14824]: Make this more direct.
 ```
 
-It supports range, block, code, image-point, inline-SVG, reply, and suggestion annotations. Stable block identifiers make structural suggestions addressable, while hashes reveal when a target has become stale. The full format is in [MARKLEFT.md](MARKLEFT.md).
+<!-- markleft:block id="b8523562" -->
+It supports range, block, code, image-point, inline-SVG, reply, and suggestion annotations. Stable block identifiers make structural suggestions addressable.
 
-![Markleft annotations move with Markdown while review tools provide the interface](docs/assets/markleft-protocol.svg)
+<!-- markleft:block id="b8523562" -->
+TODO describe markleft schema
 
-## Try it
+<!-- markleft:block id="bcc3bd2c" -->
+## The Editor
 
-Prerequisite: Node.js 22 or newer and pnpm 11.
+<!-- markleft:block id="bd9a77df" -->
+The editor currently starts as a Bookmarklet in chrome. 
+1. Drag this link to the bookmarks
+2. Open a local Markdown file in the browser
+3. Click on the bookmarklet - and edit the file
+4. To save the file the app will ask for permission to read and write the parent folder
 
-```bash
-pnpm install
-pnpm exec playwright install chromium webkit
-pnpm build
-```
-
-Open `example.md.html` in a browser after building. The document loads the generated `local-md.js` editor bundle and can be edited and saved locally.
-
-For bookmarklet use, build the bundle and add the contents of `bookmarklet.txt` as a browser bookmark URL:
-
-```bash
-pnpm build
-```
-
-## Development
-
-```bash
-pnpm test
-pnpm test:e2e
-pnpm test:all
-pnpm watch
-```
-
-The project is a TypeScript browser application built with esbuild. Unit tests use Vitest; Playwright exercises the generated editor in a real browser. `pnpm build:dev` produces a readable development bundle and source maps for browser debugging.
-
-## Repository layout
-
-- `src/` — editor UI, Markdown conversion, annotation handling, file access, and round-trip preservation.
-- `test/` — focused unit tests and format fixtures.
-- `e2e/` — browser-level editing, saving, rendering, and undo/redo tests.
-- `example.md.html` and `examples/` — self-rendering Markdown documents to explore locally.
-- `MARKLEFT.md` — the Markleft annotation-format specification.
-- `docs/assets/` — visual examples and the annotated pelican sample from the original Markleft walkthrough.
-
+<!-- markleft:block id="b766a788" -->
 ## Status
 
-This is an active prototype of the Markleft editor and format. The important behavior is covered by type checks, linting, unit tests, and end-to-end tests; the format remains intentionally open for iteration.
+<!-- markleft:block id="bb87f35c" -->
+This is an active prototype of the Markleft editor and format. the format remains intentionally open for iteration. The editor is a side project to get a POC
 
-## License
-
-No license has been selected yet. All rights reserved until one is added.
