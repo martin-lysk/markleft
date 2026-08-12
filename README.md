@@ -1,3 +1,6 @@
+
+
+
 <!-- markleft:block id="b19149d2" -->
 # Markleft Editor
 
@@ -8,7 +11,7 @@
 Markleft keeps comments, discussions, and proposed changes *in the Markdown file itself*. Open a local document, leave precise feedback on text, blocks, code, images, SVGs, tables, and Mermaid diagrams, then review AI suggestions in context before accepting them.
 
 <!-- markleft:block id="bd7cf28d" -->
-![Markleft editor with anchored review comments](docs/assets/markleft-editor.png)
+https://github.com/user-attachments/assets/c96a810b-c156-453e-979f-2f7b2b715249
 
 <!-- markleft:block id="b66c9860" -->
 ## Why Markleft
