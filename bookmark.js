@@ -1,6 +1,11 @@
 (function () {
   var version = "v6";
   var loaderUrl = "file:///Users/martinlysk/Documents/rendered-md/local-md.js";
+  var loadingScript = document.currentScript;
+  if (loadingScript && loadingScript.src) {
+    var loadingScriptUrl = new URL(loadingScript.src);
+    loaderUrl = new URL("local-md.js" + loadingScriptUrl.search, loadingScriptUrl.href).href;
+  }
 
   console.info("[local-md:bookmarklet] " + version + " hash loader");
 
@@ -10,12 +15,14 @@
 
   function hashText(text) {
     if (window.crypto && window.crypto.subtle) {
-      return window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (digest) {
-        var bytes = new Uint8Array(digest);
-        var hex = "";
-        for (var index = 0; index < bytes.length; index += 1) hex += hexByte(bytes[index]);
-        return hex;
-      });
+      return window.crypto.subtle
+        .digest("SHA-256", new TextEncoder().encode(text))
+        .then(function (digest) {
+          var bytes = new Uint8Array(digest);
+          var hex = "";
+          for (var index = 0; index < bytes.length; index += 1) hex += hexByte(bytes[index]);
+          return hex;
+        });
     }
 
     var hash = 2166136261;
@@ -35,7 +42,9 @@
   }
 
   function readPreludeFrontmatter() {
-    var script = document.querySelector("#local-md-loader,script[src$='local-md.js'],script[src*='local-md.js']");
+    var script = document.querySelector(
+      "#local-md-loader,script[src$='local-md.js'],script[src*='local-md.js']",
+    );
     if (!script || !script.parentNode) return "";
 
     var text = "";
@@ -71,20 +80,30 @@
 
     var root = document.body || document.documentElement || document;
     return {
-      technique: root === document.body ? "body.textContent" : root === document.documentElement ? "documentElement.textContent" : "document.textContent",
+      technique:
+        root === document.body
+          ? "body.textContent"
+          : root === document.documentElement
+            ? "documentElement.textContent"
+            : "document.textContent",
       text: root && root.textContent ? root.textContent : "",
     };
   }
 
   function currentSource() {
-    var bootstrap = document.querySelector("textarea[data-testid='bootstrap-source'],body>textarea:first-of-type");
+    var bootstrap = document.querySelector(
+      "textarea[data-testid='bootstrap-source'],body>textarea:first-of-type",
+    );
     if (bootstrap && typeof bootstrap.value === "string") {
       return {
         kind: "bootstrap",
         technique: bootstrap.matches("textarea[data-testid='bootstrap-source']")
           ? "textarea[data-testid='bootstrap-source'].value"
           : "body>textarea:first-of-type.value",
-        text: (readPreludeFrontmatter() + bootstrap.value.replace(/^\n/, "")).replace(/\r\n?/g, "\n"),
+        text: (readPreludeFrontmatter() + bootstrap.value.replace(/^\n/, "")).replace(
+          /\r\n?/g,
+          "\n",
+        ),
       };
     }
 
