@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { serializeFile } from "../src/file/serialize";
+import { stripDocumentBlockIds } from "../src/roundtrip/block-ids";
 import { openExample } from "./helpers";
 
 declare global {
@@ -192,7 +193,7 @@ test("saves exact serialized content and reuses a retained handle", async ({ pag
     "This is an edit task, not a read-only review",
   );
   await expect(page.getByTestId("llm-prompt-text")).toContainText(
-    "Finish only after the suggestion definitions have been written",
+    "Finish only after the appended reply and suggestion definitions have been written",
   );
   await expect(page.getByTestId("llm-prompt-text")).toContainText(
     "Treat every local-md annotation reference as review metadata, never as replacement content",
@@ -204,7 +205,16 @@ test("saves exact serialized content and reuses a retained handle", async ({ pag
     "only through one final reference-only paragraph",
   );
   await expect(page.getByTestId("llm-prompt-text")).toContainText(
-    "ensure each one is addressed by at least one suggestion",
+    "ensure each one is addressed by at least one appended reply or suggestion",
+  );
+  await expect(page.getByTestId("llm-prompt-text")).toContainText(
+    `Markdown file:\n${process.cwd()}/example.md.html`,
+  );
+  await expect(page.getByTestId("llm-prompt-text")).toContainText(
+    "Do not modify, replace, delete, or reorder any existing document body content",
+  );
+  await expect(page.getByTestId("llm-prompt-text")).toContainText(
+    "Every continuation line of a suggestion or reply footnote",
   );
   await expect(page.getByTestId("llm-prompt-text")).not.toContainText("Legacy [^suggest-block-*");
   await page.getByTestId("show-llm-prompt").click();
@@ -220,7 +230,9 @@ test("saves exact serialized content and reuses a retained handle", async ({ pag
   expect(result.pickerCalls).toBe(1);
   expect(result.options[0]).toEqual({ suggestedName: "example.md.html" });
   expect(result.writes).toHaveLength(2);
-  expect(result.writes[0]).toBe(`---
+  const saved = result.writes[0];
+  expect(saved).toMatch(/<!-- markleft:block id="b[a-f0-9]+" -->/);
+  expect(stripDocumentBlockIds(saved ?? "")).toBe(`---
 ${frontmatter}
 ---
 
