@@ -1,5 +1,11 @@
 import { makeEditable, stampBlocks } from "./editor/blocks";
 import { getSelectionState, type SelectionState } from "./editor/caret";
+import { createEditorDocumentState } from "./editor/document-state";
+import {
+  createMarkdownHistory,
+  markdownHistoryShortcut,
+  shouldUseMarkdownHistory,
+} from "./editor/markdown-history";
 import {
   activeCommentIdFromSelection,
   decorateRenderedComments,
@@ -24,11 +30,8 @@ import {
 } from "./file/handle-store";
 import {
   canWriteWithoutPrompt,
-  downloadFallback,
   pickDirectoryTarget,
-  pickSaveTarget,
   suggestedFileNameFromLocation,
-  writeFile,
   type WritableDirectoryHandle,
   type WritableFileHandle,
 } from "./file/save";
@@ -70,6 +73,8 @@ import {
 } from "./roundtrip/block-ids";
 import { createRoundtripReportCase, reportFileName } from "./roundtrip/report";
 import { buildAddressAnnotationsPrompt } from "./host/prompt-builder";
+import { BrowserFileWatch } from "./host/browser/file-watch";
+import { hasBrowserDirectoryPicker, saveWithBrowserHost } from "./host/browser/save-action";
 
 export interface LocalMdDebug {
   getSelectionState(): SelectionState;
@@ -106,26 +111,12 @@ interface MountAppOptions {
 
 type ReviewDiffMode = "active" | "all" | "none";
 
-interface FileSystemObserverRecord {
-  type?: string;
-  changedHandle?: WritableFileHandle;
-}
-
-interface FileSystemObserverLike {
-  observe(handle: WritableFileHandle): Promise<void>;
-  disconnect(): void;
-}
-
 interface LoadedFileIdentity {
   hash: string;
   acceptedHashes: string[];
   length: number;
   source: "bookmarklet";
 }
-
-type FileSystemObserverConstructor = new (
-  callback: (records: FileSystemObserverRecord[], observer: FileSystemObserverLike) => void,
-) => FileSystemObserverLike;
 
 interface WatchedFileSnapshot {
   contents: string;
@@ -142,13 +133,8 @@ export async function mountApp(
   development: boolean,
   options: MountAppOptions = {},
 ): Promise<void> {
-  const parts = splitFrontmatter(markdown);
   const state: AppState = {
-    markdown: composeMarkdown(parts),
-    frontmatter: parts.frontmatter,
-    body: parts.body,
-    dirty: false,
-    syncCount: 0,
+    ...createEditorDocumentState(markdown),
     handle: null,
     mode: "review",
     reviewDiffMode: "all",
@@ -179,12 +165,15 @@ export async function mountApp(
   } | null = null;
   let openedFileIdentityPromise: Promise<LoadedFileIdentity> | null = null;
   let activeReviewSuggestionId: string | null = null;
-  let fileObserver: FileSystemObserverLike | null = null;
-  let filePollTimer = 0;
   let fileWatchLastModified: number | null = null;
   let fileWatchLastContents: string | null = null;
   let fileWatchReloading = false;
   let pendingExternalFile: WatchedFileSnapshot | null = null;
+  const fileWatch = new BrowserFileWatch(
+    window,
+    () => void reloadChangedFile(),
+    fileWatchPollingInterval,
+  );
   let llmPromptTimer = 0;
   let llmPromptHovered = false;
 
@@ -2072,10 +2061,7 @@ export async function mountApp(
   };
 
   const stopFileWatch = () => {
-    fileObserver?.disconnect();
-    fileObserver = null;
-    window.clearInterval(filePollTimer);
-    filePollTimer = 0;
+    fileWatch.stop();
   };
 
   const startFileWatch = async (handle: WritableFileHandle, knownContents?: string) => {
@@ -2083,24 +2069,7 @@ export async function mountApp(
     if (!handle.getFile) return;
     await rememberFileWatchSnapshot(handle, knownContents);
 
-    const Observer = (window as Window & { FileSystemObserver?: FileSystemObserverConstructor })
-      .FileSystemObserver;
-    if (Observer) {
-      try {
-        fileObserver = new Observer(() => {
-          void reloadChangedFile();
-        });
-        await fileObserver.observe(handle);
-        return;
-      } catch {
-        fileObserver?.disconnect();
-        fileObserver = null;
-      }
-    }
-
-    filePollTimer = window.setInterval(() => {
-      void reloadChangedFile();
-    }, fileWatchPollingInterval);
+    await fileWatch.start(handle);
   };
 
   const useResolvedFileHandle = (handle: WritableFileHandle, knownContents?: string) => {
@@ -2195,7 +2164,7 @@ export async function mountApp(
     logFileHandling("resolve current file handle", {
       allowDirectoryPicker,
       hasExistingHandle: Boolean(state.handle),
-      hasDirectoryPicker: hasDirectoryPicker(window),
+      hasDirectoryPicker: hasBrowserDirectoryPicker(window),
     });
     const remembered = await resolveFileFromRememberedFolders(allowDirectoryPicker);
     if (remembered) {
@@ -2246,39 +2215,28 @@ export async function mountApp(
         serializedLength: contents.length,
         suggestedName,
       });
-      if (forcePick || !state.handle) {
-        if (forcePick) {
-          logFileHandling("save force pick file");
-          state.handle = await pickSaveTarget(window, { suggestedName });
-          if (state.handle) useResolvedFileHandle(state.handle);
-        } else {
-          state.handle = await resolveCurrentFileHandle(true);
-          if (!state.handle && !hasDirectoryPicker(window)) {
-            logFileHandling("save fallback to file picker because directory picker is unavailable");
-            state.handle = await pickSaveTarget(window, { suggestedName });
-            if (state.handle) useResolvedFileHandle(state.handle);
-          }
-        }
-      }
-      if (!state.handle && !forcePick && hasDirectoryPicker(window)) {
+      const saveResult = await saveWithBrowserHost({
+        win: window,
+        document,
+        markdown: state.markdown,
+        contents,
+        suggestedName,
+        forcePick,
+        getHandle: () => state.handle,
+        resolveHandle: () => resolveCurrentFileHandle(true),
+        onPickedHandle: useResolvedFileHandle,
+        onWritten: async (handle, writtenContents) => {
+          await rememberFileWatchSnapshot(handle, writtenContents);
+          void startFileWatch(handle, writtenContents);
+        },
+      });
+      if (saveResult === "awaiting-folder") {
         logFileHandling("save stopped without handle after folder flow", {
           status: status.textContent,
         });
         return;
       }
-      if (state.handle) {
-        logFileHandling("save writing file", {
-          handleName: state.handle.name ?? "(unnamed)",
-          contentsLength: contents.length,
-        });
-        await writeFile(state.handle, contents);
-        logFileHandling("save write complete", { handleName: state.handle.name ?? "(unnamed)" });
-        await rememberFileWatchSnapshot(state.handle, contents);
-        void startFileWatch(state.handle, contents);
-      } else if (!("showSaveFilePicker" in window)) {
-        logFileHandling("save using download fallback");
-        downloadFallback(state.markdown, document, suggestedName);
-      } else {
+      if (saveResult === "unavailable") {
         logFileHandling("save no handle and no fallback; keeping modified");
         setStatus("Modified");
         return;
@@ -2697,7 +2655,7 @@ export async function mountApp(
         !(await restoredHandleMatchesLoadedDocument(folderHandle, openedIdentity))
       ) {
         updateFolderButton();
-        if (!state.handle && hasDirectoryPicker(window)) setStatus("Choose folder");
+        if (!state.handle && hasBrowserDirectoryPicker(window)) setStatus("Choose folder");
         return;
       }
       state.handle = folderHandle;
@@ -2751,7 +2709,6 @@ function required<T extends Element = HTMLElement>(selector: string): T {
 }
 
 const typingHistoryDelay = 650;
-const maxHistoryEntries = 100;
 const markdownEditorExtraLines = 10;
 
 interface MarkdownHighlightRange {
@@ -2773,64 +2730,6 @@ interface ReviewDiffChange {
   originalStart: number;
   originalEnd: number;
   originalText: string;
-}
-
-interface MarkdownHistory {
-  entries: string[];
-  index: number;
-  typingTimer: number;
-  commit(markdown: string): void;
-  replace(markdown: string): void;
-  undo(): string | null;
-  redo(): string | null;
-}
-
-function createMarkdownHistory(initialMarkdown: string): MarkdownHistory {
-  return {
-    entries: [initialMarkdown],
-    index: 0,
-    typingTimer: 0,
-    commit(markdown: string) {
-      if (this.entries[this.index] === markdown) return;
-      this.entries = this.entries.slice(0, this.index + 1);
-      this.entries.push(markdown);
-      if (this.entries.length > maxHistoryEntries) this.entries.shift();
-      this.index = this.entries.length - 1;
-    },
-    replace(markdown: string) {
-      this.entries[this.index] = markdown;
-    },
-    undo() {
-      if (this.index <= 0) return null;
-      this.index -= 1;
-      return this.entries[this.index] ?? null;
-    },
-    redo() {
-      if (this.index >= this.entries.length - 1) return null;
-      this.index += 1;
-      return this.entries[this.index] ?? null;
-    },
-  };
-}
-
-function markdownHistoryShortcut(event: KeyboardEvent): "undo" | "redo" | null {
-  if ((!event.metaKey && !event.ctrlKey) || event.altKey) return null;
-  const key = event.key.toLowerCase();
-  if (key === "z") return event.shiftKey ? "redo" : "undo";
-  if (key === "y" && !event.shiftKey) return "redo";
-
-  const code = event.code;
-  const keyIsUnreliable = key === "" || key === "unidentified" || key.startsWith("dead");
-  if (!keyIsUnreliable) return null;
-  if (code === "KeyZ") return event.shiftKey ? "redo" : "undo";
-  if (code === "KeyY" && !event.shiftKey) return "redo";
-  return null;
-}
-
-function shouldUseMarkdownHistory(target: EventTarget | null): boolean {
-  return !(target as Element | null)?.closest(
-    ".local-md-comment-card textarea, .local-md-comment-card input",
-  );
 }
 
 function markdownHighlightClass(
@@ -5063,12 +4962,6 @@ async function getFileHandleByPath(
     });
     return null;
   }
-}
-
-function hasDirectoryPicker(win: Window): boolean {
-  return (
-    typeof (win as Window & { showDirectoryPicker?: unknown }).showDirectoryPicker === "function"
-  );
 }
 
 function logFileHandling(message: string, details: Record<string, unknown> = {}): void {

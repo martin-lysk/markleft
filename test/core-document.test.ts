@@ -26,7 +26,7 @@ test("core document API replaces an identified block without changing its identi
 
   const replaced = replaceDocumentBlock(document, "bintro", "# After");
 
-  expect(replaced.body).toBe('<!-- markleft:block id="bintro" -->\n# After');
+  expect(replaced.body).toBe('<!-- markleft:block id="bintro" -->\n# After\n');
   expect(replaced.blocks).toHaveLength(1);
   expect(replaced.blocks[0]?.id).toBe("bintro");
 });
