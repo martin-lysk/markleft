@@ -1,8 +1,12 @@
 import { htmlToMarkdown } from "../markdown/from-html";
-import { restoreCommentDefinitions, unescapeCommentReferences } from "../markdown/comments";
-import { composeMarkdown } from "../markdown/frontmatter";
+import {
+  composeMarkdown,
+  mergeImportedBodyWithPrevious,
+  parseMarkleftDocument,
+  restoreCommentDefinitions,
+  unescapeCommentReferences,
+} from "../core";
 import { restoreRenderedHtmlCommentElements } from "../roundtrip/artifacts/html-comment";
-import { mergeImportedBodyWithPrevious, parseMarkleftDocument } from "../roundtrip/document";
 import { injectPersistentBlockIdComments } from "./blocks";
 import { restoreMermaidDiagrams } from "./mermaid";
 import { normalizeElement } from "./normalize-dom";
