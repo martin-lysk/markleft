@@ -1,0 +1,28 @@
+{
+  "id": "markleft.editor",
+  "name": "Markleft",
+  "version": "0.1.0",
+  "description": "Review Markdown visually in a Superset workspace.",
+  "permissions": ["workspaces:read"],
+  "server": "src/server.ts",
+  "app": "dist/app.js",
+  "skills": ["skills/markleft-review"],
+  "contributes": {
+    "sidebarTabs": [
+      { "id": "markleft", "label": "Markleft", "component": "MarkleftTab" }
+    ],
+    "panes": [
+      { "kind": "markleft.editor.document", "title": "Markleft", "component": "MarkleftPane" }
+    ],
+    "commands": [
+      {
+        "id": "open",
+        "title": "Markleft: Open Markdown review",
+        "run": { "type": "open-pane", "kind": "markleft.editor.document" }
+      }
+    ],
+    "cli": [
+      { "name": "markleft-status", "description": "Check Markleft plugin availability", "action": "status" }
+    ]
+  }
+}

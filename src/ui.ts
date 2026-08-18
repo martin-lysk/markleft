@@ -73,6 +73,7 @@ import {
 } from "./roundtrip/block-ids";
 import { createRoundtripReportCase, reportFileName } from "./roundtrip/report";
 import { buildAddressAnnotationsPrompt } from "./host/prompt-builder";
+import type { MarkleftDocumentHost } from "./host/document-host";
 import { BrowserFileWatch } from "./host/browser/file-watch";
 import { hasBrowserDirectoryPicker, saveWithBrowserHost } from "./host/browser/save-action";
 
@@ -105,8 +106,16 @@ interface AppState extends SyncState {
   isFallbackGuide: boolean;
 }
 
-interface MountAppOptions {
+export interface MarkleftMountOptions {
+  /** Element owned by the host surface. The bookmarklet continues to use body. */
+  root?: HTMLElement;
   isFallbackGuide?: boolean;
+  /** Host persistence for embedded surfaces such as Superset and ChatGPT. */
+  documentHost?: MarkleftDocumentHost;
+  /** A host-native document reference used in the agent prompt. */
+  documentPath?: string;
+  /** Lets a host send the saved-review prompt directly to its selected agent. */
+  addressAnnotations?(prompt: string): Promise<void> | void;
 }
 
 type ReviewDiffMode = "active" | "all" | "none";
@@ -123,16 +132,18 @@ interface WatchedFileSnapshot {
   lastModified: number | null;
 }
 
-function llmSavedDocumentPrompt(location: Location): string {
-  const filePath = location.protocol === "file:" ? decodeFileUrlPath(location) : location.href;
+function llmSavedDocumentPrompt(location: Location, documentPath?: string): string {
+  const filePath =
+    documentPath ?? (location.protocol === "file:" ? decodeFileUrlPath(location) : location.href);
   return buildAddressAnnotationsPrompt({ documentPath: filePath });
 }
 
 export async function mountApp(
   markdown: string,
   development: boolean,
-  options: MountAppOptions = {},
+  options: MarkleftMountOptions = {},
 ): Promise<void> {
+  const mountRoot = options.root ?? document.body;
   const state: AppState = {
     ...createEditorDocumentState(markdown),
     handle: null,
@@ -352,11 +363,11 @@ export async function mountApp(
       <strong>File saved</strong>
       <p>Use this prompt when sending the Markdown file to an assistant.</p>
     </div>
-    <textarea data-testid="llm-prompt-text" readonly>${escapeHtml(llmSavedDocumentPrompt(window.location))}</textarea>
+    <textarea data-testid="llm-prompt-text" readonly>${escapeHtml(llmSavedDocumentPrompt(window.location, options.documentPath))}</textarea>
     <div class="local-md-llm-prompt-actions">
-      <button type="button" data-testid="copy-llm-prompt" aria-label="Copy AI instructions" title="Copy AI instructions">
+      <button type="button" data-testid="copy-llm-prompt" aria-label="${options.addressAnnotations ? "Address annotations" : "Copy AI instructions"}" title="${options.addressAnnotations ? "Address annotations" : "Copy AI instructions"}">
         ${uiIcon("copy")}
-        <span>Copy prompt</span>
+        <span>${options.addressAnnotations ? "Address annotations" : "Copy prompt"}</span>
       </button>
       <button type="button" data-testid="show-llm-prompt">
         <span>Show</span>
@@ -367,7 +378,7 @@ export async function mountApp(
   documentPane.append(frontmatterHeader, rendered, markdownLayer);
   workspace.append(documentPane, commentsColumn);
   shell.append(properties, workspace, selectionToolbar, llmPrompt, toastRegion, repositoryCta);
-  document.body.replaceChildren(shell);
+  mountRoot.replaceChildren(shell);
 
   const status = required("[data-testid='save-status']");
   const toolbarActions = required<HTMLElement>(".local-md-actions");
@@ -409,7 +420,7 @@ export async function mountApp(
     }, 10000);
   };
   const showLlmPrompt = () => {
-    llmPromptText.value = llmSavedDocumentPrompt(window.location);
+    llmPromptText.value = llmSavedDocumentPrompt(window.location, options.documentPath);
     llmPromptPanel.classList.remove("local-md-llm-prompt-expanded");
     showLlmPromptButton.hidden = false;
     llmPromptPanel.hidden = false;
@@ -2215,21 +2226,23 @@ export async function mountApp(
         serializedLength: contents.length,
         suggestedName,
       });
-      const saveResult = await saveWithBrowserHost({
-        win: window,
-        document,
-        markdown: state.markdown,
-        contents,
-        suggestedName,
-        forcePick,
-        getHandle: () => state.handle,
-        resolveHandle: () => resolveCurrentFileHandle(true),
-        onPickedHandle: useResolvedFileHandle,
-        onWritten: async (handle, writtenContents) => {
-          await rememberFileWatchSnapshot(handle, writtenContents);
-          void startFileWatch(handle, writtenContents);
-        },
-      });
+      const saveResult = options.documentHost
+        ? (await options.documentHost.write(state.markdown), "saved" as const)
+        : await saveWithBrowserHost({
+            win: window,
+            document,
+            markdown: state.markdown,
+            contents,
+            suggestedName,
+            forcePick,
+            getHandle: () => state.handle,
+            resolveHandle: () => resolveCurrentFileHandle(true),
+            onPickedHandle: useResolvedFileHandle,
+            onWritten: async (handle, writtenContents) => {
+              await rememberFileWatchSnapshot(handle, writtenContents);
+              void startFileWatch(handle, writtenContents);
+            },
+          });
       if (saveResult === "awaiting-folder") {
         logFileHandling("save stopped without handle after folder flow", {
           status: status.textContent,
@@ -2597,6 +2610,18 @@ export async function mountApp(
     if (!llmPromptPanel.hidden) scheduleLlmPromptHide();
   });
   copyLlmPromptButton.addEventListener("click", () => {
+    if (options.addressAnnotations) {
+      void Promise.resolve(options.addressAnnotations(llmPromptText.value))
+        .then(() => {
+          copyLlmPromptButton.title = "Sent to agent";
+          copyLlmPromptButton.setAttribute("aria-label", "Sent to agent");
+        })
+        .catch(() => {
+          copyLlmPromptButton.title = "Could not send to agent";
+          copyLlmPromptButton.setAttribute("aria-label", "Could not send to agent");
+        });
+      return;
+    }
     void copyTextToClipboard(window, llmPromptText.value).then((copied) => {
       copyLlmPromptButton.title = copied ? "Copied" : "Copy failed";
       copyLlmPromptButton.setAttribute(
@@ -2643,7 +2668,7 @@ export async function mountApp(
   openedFileIdentityPromise = createLoadedFileIdentity();
   updateFolderButton();
 
-  void restoreFileHandle(window, handleStorageKey(window.location)).then(async (handle) => {
+  if (!options.documentHost) void restoreFileHandle(window, handleStorageKey(window.location)).then(async (handle) => {
     const openedIdentity = await openedFileIdentityPromise;
     if (handle && (await restoredHandleMatchesLoadedDocument(handle, openedIdentity))) {
       state.handle = handle;

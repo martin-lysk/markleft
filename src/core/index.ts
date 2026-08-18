@@ -12,6 +12,12 @@ export {
   type ReplaceBlockOptions,
 } from "./document";
 
+export type {
+  MarkleftDocumentHost,
+  MarkleftDocumentHostCapabilities,
+  MarkleftDocumentSnapshot,
+} from "../host/document-host";
+
 export { composeMarkdown, splitFrontmatter, type MarkdownParts } from "../markdown/frontmatter";
 
 export {
