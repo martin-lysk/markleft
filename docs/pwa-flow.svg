@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Markleft PWA launch and save flow</title>
+  <desc id="desc">A flow from installing Markleft through opening a file, editing it, saving it directly, and reopening recent documents with permission recovery.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #19202a; }.title { font-size: 24px; font-weight: 700; }.label { font-size: 16px; font-weight: 700; }.body { font-size: 13px; }
+    .box { fill: #fff; stroke: #b9c4d0; stroke-width: 2; rx: 14; }.green { fill: #eef8ed; stroke: #4c8a47; }.blue { fill: #e9f5ff; stroke: #1b78b4; }.purple { fill: #f3f0fa; stroke: #7965a5; }.warning { fill: #fff7e5; stroke: #bf8621; }
+    .arrow { stroke: #5c6b7a; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }.yes { font-size: 12px; fill: #4c8a47; font-weight: 700; }.no { font-size: 12px; fill: #a26612; font-weight: 700; }
+  </style>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 z" fill="#5c6b7a"/></marker></defs>
+  <rect width="1200" height="520" fill="#fafbfd"/><text x="54" y="58" class="title">Chrome-focused PWA: a direct local-file loop</text>
+  <rect x="55" y="175" width="165" height="94" class="box green"/><text x="137" y="212" text-anchor="middle" class="label">Install once</text><text x="137" y="238" text-anchor="middle" class="body">manifest + HTTPS</text>
+  <rect x="275" y="175" width="180" height="94" class="box blue"/><text x="365" y="212" text-anchor="middle" class="label">Open Markdown</text><text x="365" y="238" text-anchor="middle" class="body">picker or file launch</text>
+  <rect x="510" y="175" width="180" height="94" class="box blue"/><text x="600" y="212" text-anchor="middle" class="label">Review and edit</text><text x="600" y="238" text-anchor="middle" class="body">shared Markleft editor</text>
+  <rect x="745" y="175" width="180" height="94" class="box green"/><text x="835" y="212" text-anchor="middle" class="label">Save</text><text x="835" y="238" text-anchor="middle" class="body">write to the same file</text>
+  <rect x="980" y="175" width="165" height="94" class="box purple"/><text x="1062" y="212" text-anchor="middle" class="label">Store recent</text><text x="1062" y="238" text-anchor="middle" class="body">handle + metadata only</text>
+  <path d="M220 222 L275 222" class="arrow"/><path d="M455 222 L510 222" class="arrow"/><path d="M690 222 L745 222" class="arrow"/><path d="M925 222 L980 222" class="arrow"/>
+  <rect x="804" y="358" width="258" height="98" class="box purple"/><text x="933" y="395" text-anchor="middle" class="label">Next launch: recent file</text><text x="933" y="421" text-anchor="middle" class="body">query / request permission on click</text>
+  <rect x="375" y="358" width="278" height="98" class="box warning"/><text x="514" y="395" text-anchor="middle" class="label">Permission or disk changed?</text><text x="514" y="421" text-anchor="middle" class="body">Reconnect · Reload · Save a copy</text>
+  <path d="M1062 269 C1062 312, 1002 328, 933 357" class="arrow"/><path d="M804 406 C750 406, 695 406, 654 406" class="arrow"/><text x="745" y="386" class="yes">granted / unchanged</text><text x="674" y="438" class="no">revoked / changed</text><path d="M514 358 C500 312, 535 294, 575 270" class="arrow"/>
+  <text x="454" y="314" class="body">return safely to editing or picker</text><text x="60" y="494" class="body">Offline boundary: the service worker caches the application shell, never the user's Markdown content. The selected local file remains the source of truth.</text>
+</svg>

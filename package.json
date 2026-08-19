@@ -9,6 +9,10 @@
   },
   "scripts": {
     "build": "node build.mjs",
+    "build:pwa": "node build-pwa.mjs",
+    "build:all": "pnpm build && pnpm build:pwa",
+    "serve:pwa": "node scripts/serve-pwa.mjs",
+    "dev:pwa": "pnpm build:pwa && pnpm serve:pwa",
     "build:bookmarklet": "node build-bookmarklet.mjs",
     "build:dev": "node build.mjs --development",
     "watch": "node build.mjs --watch",

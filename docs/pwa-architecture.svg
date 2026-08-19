@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="690" viewBox="0 0 1200 690" role="img" aria-labelledby="title desc">
+  <title id="title">Markleft Chrome PWA architecture</title>
+  <desc id="desc">The Markleft core is shared by an existing bookmarklet host and a new PWA host. The PWA uses Chrome file APIs, IndexedDB and a service worker while the bookmarklet remains unchanged.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #19202a; }
+    .title { font-size: 24px; font-weight: 700; }.label { font-size: 16px; font-weight: 700; }.body { font-size: 14px; }.small { font-size: 13px; }
+    .box { fill: #fff; stroke: #b9c4d0; stroke-width: 2; rx: 14; }.core { fill: #e9f5ff; stroke: #1b78b4; }.pwa { fill: #eef8ed; stroke: #4c8a47; }.legacy { fill: #fff7e5; stroke: #bf8621; }.platform { fill: #f3f0fa; stroke: #7965a5; }
+    .arrow { stroke: #5c6b7a; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }.dash { stroke-dasharray: 7 6; }
+  </style>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L9 5 L0 10 z" fill="#5c6b7a"/></marker></defs>
+  <rect width="1200" height="690" fill="#fafbfd"/>
+  <text x="54" y="58" class="title">One shared editor core, two small host surfaces</text>
+  <rect x="445" y="100" width="310" height="188" class="box core"/>
+  <text x="600" y="139" text-anchor="middle" class="label">Markleft shared core</text><text x="600" y="169" text-anchor="middle" class="body">Markdown ↔ rendered review UI</text><text x="600" y="194" text-anchor="middle" class="body">comments · suggestions · block ids</text><text x="600" y="219" text-anchor="middle" class="body">serialization · conflict semantics</text>
+  <rect x="485" y="238" width="230" height="30" rx="15" fill="#d4ebfa"/><text x="600" y="259" text-anchor="middle" class="small">MarkleftDocumentHost boundary</text>
+  <rect x="65" y="378" width="356" height="208" class="box legacy"/>
+  <text x="243" y="420" text-anchor="middle" class="label">Existing bookmarklet host</text><text x="243" y="452" text-anchor="middle" class="body">Injects into a local Markdown page</text><text x="243" y="478" text-anchor="middle" class="body">existing browser save / picker behavior</text><text x="243" y="504" text-anchor="middle" class="body">local-md.js + bookmark.js unchanged</text>
+  <rect x="111" y="528" width="264" height="34" rx="17" fill="#ffe9b8"/><text x="243" y="550" text-anchor="middle" class="small">keep as zero-install entry point</text>
+  <rect x="779" y="352" width="356" height="246" class="box pwa"/>
+  <text x="957" y="394" text-anchor="middle" class="label">New installed Chrome PWA host</text><text x="957" y="426" text-anchor="middle" class="body">open · recents · permission recovery</text><text x="957" y="452" text-anchor="middle" class="body">PwaDocumentHost · direct save</text><text x="957" y="478" text-anchor="middle" class="body">optional asset resolver and disk checks</text>
+  <rect x="829" y="504" width="256" height="34" rx="17" fill="#d7efd5"/><text x="957" y="526" text-anchor="middle" class="small">new pwa.ts / PWA shell</text><text x="957" y="568" text-anchor="middle" class="small">separate deployment from bookmarklet</text>
+  <rect x="824" y="90" width="310" height="172" class="box platform"/>
+  <text x="979" y="129" text-anchor="middle" class="label">Chrome platform services</text><text x="979" y="160" text-anchor="middle" class="body">File System Access API</text><text x="979" y="185" text-anchor="middle" class="body">IndexedDB handles / recents</text><text x="979" y="210" text-anchor="middle" class="body">manifest · service worker</text><text x="979" y="235" text-anchor="middle" class="body">optional File Handling API</text>
+  <path d="M445 194 C370 205, 320 300, 270 377" class="arrow"/><path d="M755 194 C785 215, 830 290, 890 350" class="arrow"/><path d="M979 262 L979 350" class="arrow"/><path d="M421 482 C540 520, 650 520, 778 490" class="arrow dash"/>
+  <text x="600" y="555" text-anchor="middle" class="small">same document format and editor behavior; hosts differ only at integration boundaries</text>
+</svg>

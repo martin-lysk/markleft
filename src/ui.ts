@@ -74,6 +74,7 @@ import {
 import { createRoundtripReportCase, reportFileName } from "./roundtrip/report";
 import { buildAddressAnnotationsPrompt } from "./host/prompt-builder";
 import type { MarkleftDocumentHost } from "./host/document-host";
+import { resolveDocumentAssets } from "./host/document-assets";
 import { BrowserFileWatch } from "./host/browser/file-watch";
 import { hasBrowserDirectoryPicker, saveWithBrowserHost } from "./host/browser/save-action";
 
@@ -180,6 +181,7 @@ export async function mountApp(
   let fileWatchLastContents: string | null = null;
   let fileWatchReloading = false;
   let pendingExternalFile: WatchedFileSnapshot | null = null;
+  let stopDocumentHostWatch: (() => void) | null = null;
   const fileWatch = new BrowserFileWatch(
     window,
     () => void reloadChangedFile(),
@@ -542,6 +544,7 @@ export async function mountApp(
     state.markdown = composeMarkdown(state);
     renderFrontmatterHeader(frontmatterHeader, state.frontmatter);
     rendered.innerHTML = await markdownToHtml(stripDocumentBlockIds(state.body));
+    await resolveDocumentAssets(rendered, options.documentHost);
     renderLocalNoteReferenceWidgets(rendered);
     clearReviewDiffHighlights();
     makeEditable(rendered);
@@ -2033,6 +2036,20 @@ export async function mountApp(
   };
 
   const reloadFileFromDisk = async () => {
+    if (options.documentHost) {
+      try {
+        const snapshot = await options.documentHost.read();
+        if (state.dirty && snapshot.markdown !== currentMarkdownSnapshot()) {
+          externalChangeToast.hidden = false;
+          setStatus("External changes available");
+          return;
+        }
+        await applyExternalMarkdownSnapshot(snapshot.markdown);
+      } catch {
+        setStatus("Reload failed", true);
+      }
+      return;
+    }
     if (pendingExternalFile && !externalChangeToast.hidden) {
       const file = pendingExternalFile;
       fileWatchLastContents = file.contents;
@@ -2720,6 +2737,25 @@ export async function mountApp(
       setStatus("Ready");
     }
   });
+  if (options.documentHost?.watch) {
+    stopDocumentHostWatch = options.documentHost.watch(() => {
+      void (async () => {
+        try {
+          const snapshot = await options.documentHost?.read();
+          if (!snapshot || snapshot.markdown === currentMarkdownSnapshot()) return;
+          if (state.dirty) {
+            externalChangeToast.hidden = false;
+            setStatus("External changes available");
+            return;
+          }
+          await applyExternalMarkdownSnapshot(snapshot.markdown);
+        } catch {
+          setStatus("Reload failed", true);
+        }
+      })();
+    });
+    window.addEventListener("beforeunload", () => stopDocumentHostWatch?.(), { once: true });
+  }
 
   if (development) {
     console.info("local-md development build");

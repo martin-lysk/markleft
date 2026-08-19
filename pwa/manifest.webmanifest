@@ -1,0 +1,28 @@
+{
+  "name": "Markleft",
+  "short_name": "Markleft",
+  "description": "Review Markdown and save directly to local files.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#f4f1e8",
+  "background_color": "#f4f1e8",
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "text/markdown": [".md", ".markdown", ".mdx"],
+        "text/x-markdown": [".md", ".markdown", ".mdx"],
+        "text/plain": [".md", ".markdown", ".mdx"]
+      },
+      "icons": [
+        { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml" }
+      ],
+      "launch_type": "multiple-clients"
+    }
+  ],
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
