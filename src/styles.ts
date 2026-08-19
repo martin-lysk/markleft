@@ -1104,6 +1104,7 @@ button[data-testid="save"]:hover {
 }
 .local-md-primary-button:hover {
   background: var(--accent-hover);
+  color: var(--paper);
 }
 .local-md-primary-button:disabled {
   border-color: var(--line-soft);

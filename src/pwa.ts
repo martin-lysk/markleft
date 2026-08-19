@@ -106,7 +106,6 @@ async function renderStartScreen(message = "Open a local Markdown file to begin.
       <h1>Markdown review, saved directly to your file.</h1>
       <p>${escapeHtml(message)}</p>
       <button type="button" class="local-md-primary-button" data-open-markdown>Open Markdown</button>
-      <button type="button" class="local-md-toolbar-button" data-open-folder>Open folder</button>
       <p class="markleft-pwa-note">Your document stays local. Chrome asks before Markleft can write to it.</p>
     </section>
     ${recent.length > 0 ? recentMarkup(recent) : ""}
@@ -114,9 +113,6 @@ async function renderStartScreen(message = "Open a local Markdown file to begin.
   document.body.append(shell);
   shell.querySelector<HTMLButtonElement>("[data-open-markdown]")?.addEventListener("click", () => {
     void openFromPicker();
-  });
-  shell.querySelector<HTMLButtonElement>("[data-open-folder]")?.addEventListener("click", () => {
-    void openFromFolder();
   });
   shell.querySelectorAll<HTMLButtonElement>("[data-recent-index]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -149,57 +145,6 @@ async function openFromPicker(): Promise<void> {
     if (error instanceof DOMException && error.name === "AbortError") return;
     await renderStartScreen(`Could not open that file: ${errorMessage(error)}`);
   }
-}
-
-async function openFromFolder(): Promise<void> {
-  const picker = (window as PwaWindow).showDirectoryPicker;
-  if (!picker) {
-    await renderStartScreen("This browser does not support folder access. Please use Chrome on desktop.");
-    return;
-  }
-  try {
-    const directory = await picker({ mode: "readwrite" });
-    const markdownFiles = await markdownFilesInDirectory(directory);
-    if (markdownFiles.length === 0) {
-      await renderStartScreen(`No Markdown files were found at the top level of ${directory.name}.`);
-      return;
-    }
-    if (markdownFiles.length === 1) {
-      const [file] = markdownFiles;
-      if (file) await openIncomingDocument(file, directory);
-      return;
-    }
-    renderFolderChoice(directory, markdownFiles);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") return;
-    await renderStartScreen(`Could not open that folder: ${errorMessage(error)}`);
-  }
-}
-
-async function markdownFilesInDirectory(directory: PwaDirectoryHandle): Promise<PwaFileHandle[]> {
-  const files: PwaFileHandle[] = [];
-  const directoryWithEntries = directory as PwaDirectoryHandle & {
-    values(): AsyncIterable<{ kind: "file" | "directory"; name: string }>;
-  };
-  for await (const entry of directoryWithEntries.values()) {
-    if (entry.kind !== "file" || !/\.(?:md|markdown|mdx)$/i.test(entry.name)) continue;
-    files.push(await directory.getFileHandle(entry.name));
-  }
-  return files.sort((left, right) => left.name.localeCompare(right.name));
-}
-
-function renderFolderChoice(directory: PwaDirectoryHandle, files: PwaFileHandle[]): void {
-  document.body.replaceChildren();
-  const shell = document.createElement("main");
-  shell.className = "markleft-pwa-start";
-  shell.innerHTML = `<section class="markleft-pwa-card"><p class="markleft-pwa-eyebrow">${escapeHtml(directory.name)}</p><h1>Choose a Markdown file</h1><ul class="markleft-pwa-file-list">${files.map((file, index) => `<li><button type="button" data-folder-file="${index}">${escapeHtml(file.name)}</button></li>`).join("")}</ul></section>`;
-  document.body.append(shell);
-  shell.querySelectorAll<HTMLButtonElement>("[data-folder-file]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const file = files[Number(button.dataset.folderFile)];
-      if (file) void openIncomingDocument(file, directory);
-    });
-  });
 }
 
 async function openDocument(handle: PwaFileHandle, directory?: PwaDirectoryHandle): Promise<void> {
