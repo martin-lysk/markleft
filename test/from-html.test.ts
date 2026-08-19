@@ -37,6 +37,18 @@ test("converts lists, code, quotes, tables, and tasks", async () => {
   expect(markdown).toContain("- [x] Done");
 });
 
+test("round trips inline code inside a single-cell GFM table", async () => {
+  const source = "| Value |\n| --- |\n| `test` |\n";
+
+  const html = await markdownToHtml(source);
+  expect(html).toContain("<table>");
+  expect(html).toContain("<code>test</code>");
+
+  const roundTripped = await htmlToMarkdown(html);
+  expect(roundTripped).toContain("| `test` |");
+  await expect(markdownToHtml(roundTripped)).resolves.toContain("<code>test</code>");
+});
+
 test("removes editor-only wrappers and attributes", async () => {
   const markdown = await htmlToMarkdown(`
     <div data-local-md-wrapper="true">Toolbar</div>

@@ -542,6 +542,7 @@ export async function mountApp(
     state.markdown = composeMarkdown(state);
     renderFrontmatterHeader(frontmatterHeader, state.frontmatter);
     rendered.innerHTML = await markdownToHtml(stripDocumentBlockIds(state.body));
+    renderLocalNoteReferenceWidgets(rendered);
     clearReviewDiffHighlights();
     makeEditable(rendered);
     await renderMermaidDiagrams(rendered);

@@ -217,6 +217,21 @@ test("ignores comment markers inside inline code and fenced code", () => {
   expect(stripCommentSyntax(markdown)).toContain("[^range-prev-4-chars-12345-abcd]: not a definition");
 });
 
+test("anchors inline-code selections after the closing delimiter and recognizes existing markers", () => {
+  const inlineCode = "| Value |\n| --- |\n| `test` |\n";
+  const start = inlineCode.indexOf("test");
+  const created = createRangeComment(inlineCode, start, start + "test".length, "On code", 29413);
+
+  expect(created).toMatch(/`test`\[\^range-prev-4-chars-29413-[0-9a-f]{4}\]/);
+  expect(parseComments(created)[0]).toMatchObject({ kind: "range", stale: false });
+
+  const id = /\[\^([^\]]+)\]/.exec(created)?.[1];
+  if (!id) throw new Error("Expected a generated range comment id");
+  const legacy = `| Value |\n| --- |\n| \`test[^${id}]\` |\n\n[^${id}]: On code\n`;
+
+  expect(parseComments(legacy)[0]).toMatchObject({ kind: "range", id, stale: false });
+});
+
 test("ignores child comments and suggestions inside code in comment bodies", () => {
   const markdown = [
     "Reviewed text[^range-prev-12-chars-12345-abcd].",

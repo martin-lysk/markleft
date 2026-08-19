@@ -8,7 +8,7 @@ export function renderLocalNoteReferenceWidgets(root: HTMLElement): void {
       const parent = node.parentElement;
       if (
         parent?.closest(
-          "code,pre,.local-md-comment-anchor,.local-md-image-comment-anchor,section[data-footnotes],[data-local-md-wrapper='true']",
+          "pre,.local-md-comment-anchor,.local-md-image-comment-anchor,section[data-footnotes],[data-local-md-wrapper='true']",
         )
       ) {
         return NodeFilter.FILTER_REJECT;

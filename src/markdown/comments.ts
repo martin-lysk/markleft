@@ -218,7 +218,8 @@ export function parseComments(markdown: string): ParsedComment[] {
   const definitions = parseCommentDefinitions(markdown);
   const comments: ParsedComment[] = [];
   const referencedIds = new Set<string>();
-  const ignoredRanges = ignoredCommentMarkerRanges(markdown);
+  const fencedRanges = fencedCodeRanges(markdown);
+  const inlineCodeRanges = inlineCodeSpanRanges(markdown);
   const relationRanges = [
     ...operationSuggestionRelationRanges(markdown, definitions),
     ...childCommentReplyRelationRanges(markdown, definitions),
@@ -229,7 +230,18 @@ export function parseComments(markdown: string): ParsedComment[] {
     if (!id || match.index === undefined) continue;
     const markerSourceStart = match.index;
     const markerSourceEnd = markerSourceStart + match[0].length;
-    if (rangeOverlapsIgnoredMarkerRange(markerSourceStart, markerSourceEnd, ignoredRanges)) continue;
+    const definition = definitions.get(id);
+    if (rangeOverlapsIgnoredMarkerRange(markerSourceStart, markerSourceEnd, fencedRanges)) continue;
+    const isRangeMarkerInsideInlineCode =
+      Boolean(parseRangeId(id)) &&
+      Boolean(definition) &&
+      rangeOverlapsIgnoredMarkerRange(markerSourceStart, markerSourceEnd, inlineCodeRanges);
+    if (
+      rangeOverlapsIgnoredMarkerRange(markerSourceStart, markerSourceEnd, inlineCodeRanges) &&
+      !isRangeMarkerInsideInlineCode
+    ) {
+      continue;
+    }
     if (rangeOverlapsIgnoredMarkerRange(markerSourceStart, markerSourceEnd, relationRanges)) {
       referencedIds.add(id);
       continue;
@@ -239,7 +251,6 @@ export function parseComments(markdown: string): ParsedComment[] {
       referencedIds.add(id);
       continue;
     }
-    const definition = definitions.get(id);
     referencedIds.add(id);
 
     const rangeId = parseRangeId(id);
@@ -393,7 +404,7 @@ export function createRangeComment(
   const logicalLength = projectAnchorTextForSourceRange(markdown, normalizedStart, normalizedEnd).length;
   if (logicalLength === 0) return createBlockComment(markdown, normalizedEnd, bodyMarkdown, now);
   const id = `range-prev-${logicalLength}-chars-${now % 100000}-${logicalCommentHashForRange(markdown, normalizedStart, normalizedEnd)}`;
-  return insertComment(markdown, normalizedEnd, id, bodyMarkdown);
+  return insertComment(markdown, commentMarkerInsertionPoint(markdown, normalizedEnd), id, bodyMarkdown);
 }
 
 export function createBlockComment(
@@ -1099,6 +1110,16 @@ function inlineCodeSpanRanges(markdown: string): SourceRange[] {
     index = closing + tickCount;
   }
   return ranges;
+}
+
+/**
+ * A footnote inside an inline-code span is literal Markdown, not a footnote.
+ * Keep a selected code span intact and attach its Markleft marker immediately
+ * after the closing delimiter instead.
+ */
+function commentMarkerInsertionPoint(markdown: string, position: number): number {
+  const inlineCode = rangeContainingPosition(position, inlineCodeSpanRanges(markdown));
+  return inlineCode?.end ?? position;
 }
 
 function mergeSourceRanges(ranges: SourceRange[]): SourceRange[] {
