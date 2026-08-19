@@ -2480,6 +2480,33 @@ export async function mountApp(
     if (saveButton) saveButton.disabled = input.value.trim().length === 0;
     scheduleCommentLayout();
   });
+  commentsColumn.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || (!event.metaKey && !event.ctrlKey)) return;
+    const input = (event.target as HTMLElement | null)?.closest<HTMLTextAreaElement>(
+      ".local-md-comment-card textarea",
+    );
+    if (!input) return;
+    event.preventDefault();
+    if (input.value.trim().length === 0) return;
+    let saveButton: HTMLButtonElement | null = null;
+    if (input.matches("[data-testid='comment-input']")) {
+      const reviewBox = input.closest<HTMLElement>("[data-review-comment-id]");
+      saveButton = reviewBox
+        ? reviewBox.querySelector<HTMLButtonElement>("button[data-action='save-review-comment']")
+        : (input
+            .closest<HTMLElement>(".local-md-comment-card")
+            ?.querySelector<HTMLButtonElement>("button[data-action='save-comment']") ?? null);
+    } else if (input.matches("[data-testid='comment-reply-input']")) {
+      saveButton = input
+        .closest<HTMLElement>(".local-md-comment-card")
+        ?.querySelector<HTMLButtonElement>("button[data-action='save-reply']") ?? null;
+    } else if (input.matches("[data-testid='child-comment-input']")) {
+      saveButton = input
+        .closest<HTMLElement>("[data-child-comment-id]")
+        ?.querySelector<HTMLButtonElement>("button[data-action='save-child-comment']") ?? null;
+    }
+    saveButton?.click();
+  });
   editor.addEventListener("input", () => {
     state.body = editor.value;
     state.markdown = composeMarkdown(state);

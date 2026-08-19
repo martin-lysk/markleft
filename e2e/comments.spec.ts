@@ -192,6 +192,38 @@ test("cancels unsaved draft comments by removing their anchor", async ({ page })
   await expect(page.getByTestId("markdown-editor")).not.toHaveValue(/\[\^range-/);
 });
 
+test("saves comments and replies with Cmd/Ctrl+Enter", async ({ page }) => {
+  await openExample(page);
+
+  await page.locator("[data-mode-trigger]").click();
+  await page.getByTestId("mode-markdown").click();
+  const editor = page.getByTestId("markdown-editor");
+  await editor.fill("Shortcut save target.");
+  await editor.evaluate((textarea) => {
+    const input = textarea as HTMLTextAreaElement;
+    input.setSelectionRange(0, "Shortcut save".length);
+  });
+  await page.getByTestId("add-comment").click();
+
+  const input = page.getByTestId("comment-input");
+  await input.fill("Saved by shortcut");
+  await input.press("ControlOrMeta+Enter");
+
+  await expect(page.getByTestId("comment-card")).toContainText("Saved by shortcut");
+  await expect(editor).toHaveValue(
+    /\[\^range-prev-\d+-chars-\d+-[0-9a-f]{4}\]: Saved by shortcut/,
+  );
+
+  await page.getByTestId("comment-card").click();
+  const replyInput = page.getByTestId("comment-reply-input");
+  await replyInput.fill("Reply by shortcut");
+  await replyInput.press("ControlOrMeta+Enter");
+
+  await expect(page.getByTestId("comment-card")).toContainText("Reply by shortcut");
+  await expect(editor).toHaveValue(/\[\^comment-\d+[^\n]*\]: Reply to/);
+  await expect(editor).toHaveValue(/Reply by shortcut/);
+});
+
 test("keeps an unsaved comment draft when focus leaves and returns to the input", async ({
   page,
 }) => {
