@@ -1,4 +1,4 @@
-name: Deploy bookmarklet to GitHub Pages
+name: Deploy Markleft to GitHub Pages
 
 on:
   push:
@@ -32,9 +32,11 @@ jobs:
       - run: pnpm build
         env:
           LOCAL_MD_LOADER_URL: https://martin-lysk.github.io/markleft/local-md.js
+      - run: pnpm build:pwa
       - run: |
           mkdir -p pages
           cp local-md.js bookmarklet.txt pages/
+          cp -R dist/pwa pages/pwa
       - uses: actions/upload-pages-artifact@v3
         with:
           path: pages
