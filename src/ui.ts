@@ -84,6 +84,15 @@ export interface LocalMdDebug {
   getSyncCount(): number;
 }
 
+export type MarkleftApplicationMenuItem =
+  | { kind: "action"; label: string; shortcut?: string; action: () => Promise<void> | void; disabled?: boolean }
+  | { kind: "separator" }
+  | { kind: "label"; label: string };
+
+export interface MarkleftApplicationMenu {
+  getItems(): Promise<MarkleftApplicationMenuItem[]> | MarkleftApplicationMenuItem[];
+}
+
 declare global {
   interface Window {
     __localMdDebug?: LocalMdDebug;
@@ -117,6 +126,10 @@ export interface MarkleftMountOptions {
   documentPath?: string;
   /** Lets a host send the saved-review prompt directly to its selected agent. */
   addressAnnotations?(prompt: string): Promise<void> | void;
+  /** User-gesture-only recovery for local resources that need broader access. */
+  requestAssetAccess?(): Promise<boolean>;
+  /** Optional host-native application menu, used by the installed PWA. */
+  applicationMenu?: MarkleftApplicationMenu;
 }
 
 type ReviewDiffMode = "active" | "all" | "none";
@@ -189,6 +202,7 @@ export async function mountApp(
   );
   let llmPromptTimer = 0;
   let llmPromptHovered = false;
+  let assetAccessPromptDismissed = false;
 
   const shell = document.createElement("main");
   shell.className = "local-md-shell";
@@ -337,6 +351,11 @@ export async function mountApp(
       <button type="button" data-testid="toast-load-disk">Load from disk</button>
       <button type="button" data-testid="toast-save-mine">Save my state</button>
     </section>
+    <section class="local-md-toast local-md-asset-access-toast" data-testid="asset-access-toast" hidden aria-live="polite">
+      <span data-testid="asset-access-message">Markleft needs read access to the project folder to load local images.</span>
+      <button type="button" data-testid="asset-access-grant">Grant access</button>
+      <button type="button" class="local-md-toast-dismiss" data-testid="asset-access-dismiss" aria-label="Hide folder-access reminder" title="Hide">×</button>
+    </section>
   `;
 
   const repositoryCta = document.createElement("aside");
@@ -383,6 +402,7 @@ export async function mountApp(
 
   const status = required("[data-testid='save-status']");
   const toolbar = required<HTMLElement>(".local-md-toolbar");
+  if (options.applicationMenu) installApplicationMenu(toolbar, options.applicationMenu);
   const toolbarActions = toolbar;
   const formatControls = required<HTMLElement>("[data-toolbar-format-controls]");
   const overflowMenu = required<HTMLElement>("[data-toolbar-overflow]");
@@ -403,11 +423,22 @@ export async function mountApp(
   const toastSaveButton = required<HTMLButtonElement>("[data-testid='toast-save']");
   const toastLoadDiskButton = required<HTMLButtonElement>("[data-testid='toast-load-disk']");
   const toastSaveMineButton = required<HTMLButtonElement>("[data-testid='toast-save-mine']");
+  const assetAccessToast = required<HTMLElement>("[data-testid='asset-access-toast']");
+  const assetAccessMessage = required<HTMLElement>("[data-testid='asset-access-message']");
+  const assetAccessGrantButton = required<HTMLButtonElement>("[data-testid='asset-access-grant']");
+  const assetAccessDismissButton = required<HTMLButtonElement>("[data-testid='asset-access-dismiss']");
   const llmPromptPanel = required<HTMLElement>("[data-testid='llm-prompt']");
   const llmPromptText = required<HTMLTextAreaElement>("[data-testid='llm-prompt-text']");
   const copyLlmPromptButton = required<HTMLButtonElement>("[data-testid='copy-llm-prompt']");
   const showLlmPromptButton = required<HTMLButtonElement>("[data-testid='show-llm-prompt']");
   const closeLlmPromptButton = required<HTMLButtonElement>("[data-testid='close-llm-prompt']");
+
+  if (options.documentHost?.capabilities.canWrite === false) {
+    saveButton.disabled = true;
+    saveButton.title = "This remote document is read-only";
+    saveButton.textContent = "Read-only";
+    saveOptionsButton.hidden = true;
+  }
 
   const hideLlmPrompt = () => {
     window.clearTimeout(llmPromptTimer);
@@ -547,13 +578,22 @@ export async function mountApp(
     state.markdown = composeMarkdown(state);
     renderFrontmatterHeader(frontmatterHeader, state.frontmatter);
     rendered.innerHTML = await markdownToHtml(stripDocumentBlockIds(state.body));
-    await resolveDocumentAssets(rendered, options.documentHost);
     renderLocalNoteReferenceWidgets(rendered);
     clearReviewDiffHighlights();
     makeEditable(rendered);
     await renderMermaidDiagrams(rendered);
     stampBlocks(rendered, state.includeBlockIds ? documentBlockIds(state.body) : []);
     if (state.mode === "review") await applyReviewSuggestions(rendered, state.body);
+    const assets = await resolveDocumentAssets(rendered, options.documentHost, {
+      showUnavailablePlaceholders: Boolean(options.requestAssetAccess),
+    });
+    if (assets.unresolvedRelativeSources.length === 0) {
+      assetAccessToast.hidden = true;
+    } else if (options.requestAssetAccess && !assetAccessPromptDismissed) {
+      const count = assets.unresolvedRelativeSources.length;
+      assetAccessMessage.textContent = `Markleft needs read access to the project folder to load ${count} local image${count === 1 ? "" : "s"}.`;
+      assetAccessToast.hidden = false;
+    }
     paintReviewDiffHighlights();
     makeEditable(rendered);
     if (state.isFallbackGuide) installFallbackBookmarkletControl(rendered);
@@ -567,6 +607,35 @@ export async function mountApp(
     }
     requestAnimationFrame(layoutCommentCards);
   };
+
+  assetAccessDismissButton.addEventListener("click", () => {
+    assetAccessPromptDismissed = true;
+    assetAccessToast.hidden = true;
+  });
+  const requestAssetAccess = async () => {
+    if (!options.requestAssetAccess || assetAccessGrantButton.disabled) return;
+    assetAccessGrantButton.disabled = true;
+    try {
+      const granted = await options.requestAssetAccess();
+      if (granted) {
+        assetAccessPromptDismissed = false;
+        assetAccessToast.hidden = true;
+        await render();
+      }
+    } finally {
+      assetAccessGrantButton.disabled = false;
+    }
+  };
+  assetAccessGrantButton.addEventListener("click", () => {
+    void requestAssetAccess();
+  });
+  rendered.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const placeholder = target?.closest<HTMLImageElement>('img[data-markleft-asset-placeholder="true"]');
+    if (!placeholder || !rendered.contains(placeholder)) return;
+    event.preventDefault();
+    void requestAssetAccess();
+  });
 
   const applyReviewSuggestions = async (root: HTMLElement, markdownBody: string) => {
     const suggestions = parseBlockSuggestions(markdownBody);
@@ -2836,8 +2905,89 @@ export async function mountApp(
   }
 }
 
-function required<T extends Element = HTMLElement>(selector: string): T {
-  const element = document.querySelector<T>(selector);
+function installApplicationMenu(toolbar: HTMLElement, source: MarkleftApplicationMenu): void {
+  const appMenu = toolbar.ownerDocument.createElement("div");
+  appMenu.className = "local-md-app-menu";
+  appMenu.innerHTML = `
+    <button type="button" class="local-md-toolbar-button local-md-app-menu-trigger" aria-expanded="false" aria-label="Markleft menu" title="Markleft menu">
+      <span>Markleft</span>${uiIcon("chevron-down")}
+    </button>
+    <div class="local-md-app-menu-popover" role="menu"></div>
+  `;
+  const trigger = required<HTMLButtonElement>(".local-md-app-menu-trigger", appMenu);
+  const popover = required<HTMLElement>(".local-md-app-menu-popover", appMenu);
+  let loading = false;
+
+  const close = () => {
+    appMenu.classList.remove("local-md-app-menu-open");
+    trigger.setAttribute("aria-expanded", "false");
+  };
+
+  const show = async () => {
+    if (loading) return;
+    loading = true;
+    trigger.disabled = true;
+    popover.replaceChildren();
+    try {
+      const items = await source.getItems();
+      for (const item of items) {
+        if (item.kind === "separator") {
+          const separator = toolbar.ownerDocument.createElement("hr");
+          separator.className = "local-md-app-menu-separator";
+          popover.append(separator);
+          continue;
+        }
+        if (item.kind === "label") {
+          const label = toolbar.ownerDocument.createElement("div");
+          label.className = "local-md-app-menu-label";
+          label.textContent = item.label;
+          popover.append(label);
+          continue;
+        }
+        const button = toolbar.ownerDocument.createElement("button");
+        button.type = "button";
+        button.className = "local-md-app-menu-item";
+        button.role = "menuitem";
+        button.disabled = item.disabled === true;
+        const label = toolbar.ownerDocument.createElement("span");
+        label.textContent = item.label;
+        button.append(label);
+        if (item.shortcut) {
+          const shortcut = toolbar.ownerDocument.createElement("kbd");
+          shortcut.textContent = item.shortcut;
+          button.append(shortcut);
+        }
+        button.addEventListener("click", () => {
+          close();
+          void item.action();
+        });
+        popover.append(button);
+      }
+      appMenu.classList.add("local-md-app-menu-open");
+      trigger.setAttribute("aria-expanded", "true");
+    } finally {
+      loading = false;
+      trigger.disabled = false;
+    }
+  };
+
+  trigger.addEventListener("click", () => {
+    if (appMenu.classList.contains("local-md-app-menu-open")) close();
+    else void show();
+  });
+  toolbar.ownerDocument.addEventListener("pointerdown", (event) => {
+    if (!appMenu.contains(event.target as Node)) close();
+  });
+  toolbar.ownerDocument.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+
+  const modeMenu = toolbar.querySelector(".local-md-mode-menu");
+  toolbar.insertBefore(appMenu, modeMenu);
+}
+
+function required<T extends Element = HTMLElement>(selector: string, root: ParentNode = document): T {
+  const element = root.querySelector<T>(selector);
   if (!element) throw new Error(`Missing ${selector}`);
   return element;
 }
@@ -4506,10 +4656,19 @@ function positionImageCommentAnchors(
   for (const [index, image] of bitmapElements.entries()) {
     const anchor = bitmapAnchors[index];
     if (!anchor) continue;
-    const frame = wrapImageTarget(image);
     const imageComments = comments.filter(
       (comment) => comment.target === "bitmap" && comment.imageSourceStart === anchor.start,
     );
+    if (image.dataset.markleftAssetPlaceholder === "true") {
+      for (const comment of imageComments) {
+        const marker = root.querySelector<HTMLElement>(
+          `.local-md-image-comment-anchor[data-comment-id="${CSS.escape(comment.id)}"]`,
+        );
+        if (marker) marker.hidden = true;
+      }
+      continue;
+    }
+    const frame = wrapImageTarget(image);
     for (const comment of imageComments) {
       positionImageAnchor(
         root,
@@ -4600,6 +4759,7 @@ function resolveImageCommentHit(
   const anchors = findImageAnchors(markdown);
   const image = target.closest<HTMLImageElement>("img");
   if (image && root.contains(image)) {
+    if (image.dataset.markleftAssetPlaceholder === "true") return null;
     const images = Array.from(root.querySelectorAll<HTMLImageElement>("img"));
     const anchor = anchors.filter((candidate) => candidate.kind === "markdown-image")[
       images.indexOf(image)

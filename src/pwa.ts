@@ -6,8 +6,15 @@ import {
 import { registerPwaFileLaunches, type PwaLaunchQueue } from "./host/pwa/file-launch";
 import { firstDroppedMarkdownHandle } from "./host/pwa/drag-drop";
 import { loadRecentDocuments, rememberRecentDocument, type RecentPwaDocument } from "./host/pwa/recent-documents";
+import { restoreProjectLocation, verifyProjectLocation } from "./host/pwa/project-access";
+import { HttpDocumentHost } from "./host/http/document-host";
+import { installPwaOpenShortcut } from "./host/pwa/open-shortcut";
 import { styles } from "./styles";
-import { mountApp } from "./ui";
+import {
+  mountApp,
+  type MarkleftApplicationMenu,
+  type MarkleftApplicationMenuItem,
+} from "./ui";
 
 declare const __MARKLEFT_PWA_BUILD__: string;
 
@@ -37,15 +44,55 @@ const crossWindowMessageType = "markleft:pwa-open-file";
 const crossWindowReadyType = "markleft:pwa-open-file-ready";
 let hasOpenDocument = false;
 
+function pwaApplicationMenu(): MarkleftApplicationMenu {
+  return {
+    getItems: async () => {
+      const recent = await loadRecentDocuments();
+      const items: MarkleftApplicationMenuItem[] = [
+        {
+          kind: "action",
+          label: "Open Markdown…",
+          shortcut: "⌘O",
+          action: () => openFromPicker(),
+        },
+        { kind: "separator" },
+        { kind: "label", label: "Open recent" },
+      ];
+      if (recent.length === 0) {
+        items.push({ kind: "action", label: "No recent documents", disabled: true, action: () => undefined });
+      } else {
+        items.push(
+          ...recent.map((item) => ({
+            kind: "action" as const,
+            label: item.name,
+            action: () => openIncomingDocument(item.handle, item.directory),
+          })),
+        );
+      }
+      items.push(
+        { kind: "separator" },
+        { kind: "action", label: "New Markleft window", action: () => openNewMarkleftWindow() },
+      );
+      return items;
+    },
+  };
+}
+
 async function start(): Promise<void> {
   installStyles();
   registerServiceWorker();
   installCrossWindowFileReceiver();
   installDragAndDrop();
-  await renderStartScreen();
+  installPwaOpenShortcut(window, () => void openFromPicker());
   registerPwaFileLaunches(window as PwaWindow, (handle) => {
     void openIncomingDocument(handle);
   });
+  const httpPath = new URL(window.location.href).searchParams.get("httpPath");
+  if (httpPath) {
+    await openRemoteDocument(httpPath);
+    return;
+  }
+  await renderStartScreen();
 }
 
 async function renderStartScreen(message = "Open a local Markdown file to begin."): Promise<void> {
@@ -157,16 +204,60 @@ function renderFolderChoice(directory: PwaDirectoryHandle, files: PwaFileHandle[
 
 async function openDocument(handle: PwaFileHandle, directory?: PwaDirectoryHandle): Promise<void> {
   try {
-    const host = new PwaDocumentHost(handle, directory);
+    const selectedProject = directory ? await verifyProjectLocation(handle, directory) : null;
+    const project = (await restoreProjectLocation(handle)) ?? selectedProject;
+    const host = new PwaDocumentHost(handle, project ?? undefined);
     const snapshot = await host.read();
-    await rememberRecentDocument(handle, directory);
+    await rememberRecentDocument(handle, project?.root ?? directory);
     await mountApp(snapshot.markdown, false, {
       documentHost: host,
       documentPath: handle.name,
+      applicationMenu: pwaApplicationMenu(),
+      requestAssetAccess: async () => {
+        const picker = (window as PwaWindow).showDirectoryPicker;
+        if (!picker) {
+          window.alert("This browser does not support project-folder access. Please use Chrome on desktop.");
+          return false;
+        }
+        try {
+          const root = await picker({ mode: "read" });
+          const verified = await verifyProjectLocation(handle, root);
+          if (!verified) {
+            window.alert(`The selected folder does not contain the open Markdown file ${handle.name}.`);
+            return false;
+          }
+          const project = (await restoreProjectLocation(handle)) ?? verified;
+          host.attachProject(project);
+          await rememberRecentDocument(handle, project.root);
+          return true;
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === "AbortError")) {
+            window.alert(`Could not use that project folder: ${errorMessage(error)}`);
+          }
+          return false;
+        }
+      },
     });
     hasOpenDocument = true;
   } catch (error) {
     await renderStartScreen(`Could not open ${handle.name}: ${errorMessage(error)}`);
+  }
+}
+
+async function openRemoteDocument(url: string): Promise<void> {
+  try {
+    await renderStartScreen("Loading remote Markdown…");
+    const host = await HttpDocumentHost.open(url);
+    const snapshot = await host.read();
+    await mountApp(snapshot.markdown, false, {
+      documentHost: host,
+      documentPath: host.source.canonicalUrl,
+      applicationMenu: pwaApplicationMenu(),
+    });
+    document.title = `Markleft — ${host.displayName}`;
+    hasOpenDocument = true;
+  } catch (error) {
+    await renderStartScreen(`Could not open remote Markdown: ${errorMessage(error)}`);
   }
 }
 
@@ -198,6 +289,14 @@ function openDocumentInNewWindow(handle: PwaFileHandle): void {
   };
   window.addEventListener("message", sendHandle);
   window.setTimeout(() => window.removeEventListener("message", sendHandle), 15000);
+}
+
+function openNewMarkleftWindow(): void {
+  const token = window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  const popup = window.open("./", `markleft-new-${token}`, "popup");
+  if (!popup) {
+    window.alert("Chrome blocked the new Markleft window. Allow pop-ups for Markleft, then try again.");
+  }
 }
 
 function installCrossWindowFileReceiver(): void {

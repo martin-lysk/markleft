@@ -14,12 +14,21 @@ export interface MarkleftDocumentHostCapabilities {
   canWatch: boolean;
   canResolveAssets: boolean;
   canInvokeAgent: boolean;
+  /** Omitted by older adapters; treated as writable for backward compatibility. */
+  canWrite?: boolean;
 }
+
+export type MarkleftDocumentSource =
+  | { kind: "local-project" }
+  | { kind: "browser-page"; url: string }
+  | { kind: "http"; requestedUrl: string; canonicalUrl: string }
+  | { kind: "remote-service"; provider: string; documentId: string };
 
 export interface MarkleftDocumentHost {
   id: string;
   displayName: string;
   capabilities: MarkleftDocumentHostCapabilities;
+  source?: MarkleftDocumentSource;
   read(): Promise<MarkleftDocumentSnapshot>;
   write(
     markdown: string,

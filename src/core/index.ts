@@ -16,6 +16,7 @@ export type {
   MarkleftDocumentHost,
   MarkleftDocumentHostCapabilities,
   MarkleftDocumentSnapshot,
+  MarkleftDocumentSource,
 } from "../host/document-host";
 
 export { composeMarkdown, splitFrontmatter, type MarkdownParts } from "../markdown/frontmatter";

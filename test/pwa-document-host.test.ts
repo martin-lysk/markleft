@@ -75,9 +75,13 @@ describe("PwaDocumentHost", () => {
         });
       },
     };
-    const host = new PwaDocumentHost(fakeHandle(), directory);
+    const host = new PwaDocumentHost(fakeHandle(), {
+      root: directory,
+      documentPath: ["notes.md"],
+      lastVerifiedAt: 0,
+    });
 
-    expect(normalizeRelativeAssetPath("images/../secret.png")).toBeNull();
+    expect(normalizeRelativeAssetPath("images/../secret.png")).toBe("secret.png");
     expect(normalizeRelativeAssetPath("https://example.com/image.png")).toBeNull();
     expect(normalizeRelativeAssetPath("./diagram.png")).toBe("diagram.png");
     await expect(host.resolveAsset("diagram.png")).resolves.toMatch(/^blob:/);

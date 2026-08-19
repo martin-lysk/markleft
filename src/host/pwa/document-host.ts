@@ -1,5 +1,6 @@
 import type { MarkleftDocumentHost, MarkleftDocumentSnapshot } from "../document-host";
 import { BrowserFileWatch } from "../browser/file-watch";
+import { assetUrlSuffix, resolveProjectRelativePath, type PwaProjectLocation } from "./project-access";
 
 export interface PwaFile {
   lastModified: number;
@@ -9,6 +10,8 @@ export interface PwaFile {
 
 export interface PwaFileHandle {
   name: string;
+  kind?: "file";
+  isSameEntry?(other: unknown): Promise<boolean>;
   getFile(): Promise<PwaFile>;
   queryPermission?(descriptor?: { mode: "read" | "readwrite" }): Promise<PermissionState>;
   requestPermission?(descriptor?: { mode: "read" | "readwrite" }): Promise<PermissionState>;
@@ -20,6 +23,10 @@ export interface PwaFileHandle {
 
 export interface PwaDirectoryHandle {
   name: string;
+  kind?: "directory";
+  isSameEntry?(other: unknown): Promise<boolean>;
+  queryPermission?(descriptor?: { mode: "read" | "readwrite" }): Promise<PermissionState>;
+  requestPermission?(descriptor?: { mode: "read" | "readwrite" }): Promise<PermissionState>;
   getDirectoryHandle(name: string): Promise<PwaDirectoryHandle>;
   getFileHandle(name: string): Promise<PwaFileHandle>;
 }
@@ -41,22 +48,28 @@ export class PwaDocumentConflictError extends Error {
 export class PwaDocumentHost implements MarkleftDocumentHost {
   readonly id: string;
   readonly displayName: string;
-  readonly capabilities = {
-    canWatch: true,
-    canResolveAssets: true,
-    canInvokeAgent: false,
-  };
-
+  readonly source = { kind: "local-project" as const };
   private lastKnownRevision: string | undefined;
   private fileWatch: BrowserFileWatch | null = null;
   private assetUrls = new Map<string, string>();
+  private project: PwaProjectLocation | null;
 
   constructor(
     private readonly handle: PwaFileHandle,
-    private readonly directory?: PwaDirectoryHandle,
+    project?: PwaProjectLocation,
   ) {
     this.id = `pwa-file:${handle.name}`;
     this.displayName = handle.name;
+    this.project = project ?? null;
+  }
+
+  get capabilities() {
+    return {
+      canWatch: true,
+      canResolveAssets: this.project !== null,
+      canInvokeAgent: false,
+      canWrite: true,
+    };
   }
 
   async read(): Promise<MarkleftDocumentSnapshot> {
@@ -103,30 +116,41 @@ export class PwaDocumentHost implements MarkleftDocumentHost {
   }
 
   async resolveAsset(relativePath: string): Promise<string | null> {
-    if (!this.directory) return null;
-    const normalized = normalizeRelativeAssetPath(relativePath);
-    if (!normalized) return null;
+    if (!this.project) return null;
+    const path = resolveProjectRelativePath(this.project.documentPath, relativePath);
+    if (!path) return null;
+    const normalized = path.join("/");
     const remembered = this.assetUrls.get(normalized);
     if (remembered) return remembered;
 
     try {
-      const segments = normalized.split("/");
+      const segments = [...path];
       const fileName = segments.pop();
       if (!fileName) return null;
-      let folder = this.directory;
+      let folder = this.project.root;
       for (const segment of segments) folder = await folder.getDirectoryHandle(segment);
       const file = await (await folder.getFileHandle(fileName)).getFile();
       const url = URL.createObjectURL(file as unknown as Blob);
       this.assetUrls.set(normalized, url);
-      return url;
+      return `${url}${assetUrlSuffix(relativePath)}`;
     } catch {
       return null;
     }
   }
 
+  /** Add or replace the verified project root without reopening the document. */
+  attachProject(project: PwaProjectLocation): void {
+    this.clearAssetUrls();
+    this.project = project;
+  }
+
   dispose(): void {
     this.fileWatch?.stop();
     this.fileWatch = null;
+    this.clearAssetUrls();
+  }
+
+  private clearAssetUrls(): void {
     for (const url of this.assetUrls.values()) URL.revokeObjectURL(url);
     this.assetUrls.clear();
   }
@@ -150,11 +174,7 @@ export function revisionFor(markdown: string, lastModified: number, size: number
 }
 
 export function normalizeRelativeAssetPath(value: string): string | null {
-  const path = value.replace(/\\/g, "/").replace(/^\.\//, "");
-  if (!path || path.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(path)) return null;
-  const segments = path.split("/");
-  if (segments.some((segment) => !segment || segment === "." || segment === "..")) return null;
-  return segments.join("/");
+  return resolveProjectRelativePath(["document.md"], value)?.join("/") ?? null;
 }
 
 async function ensureWritePermission(handle: PwaFileHandle): Promise<void> {
