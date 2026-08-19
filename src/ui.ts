@@ -194,7 +194,6 @@ export async function mountApp(
   shell.className = "local-md-shell";
   shell.innerHTML = `
     <div class="local-md-toolbar" data-local-md-wrapper="true">
-      <button type="button" class="local-md-toolbar-save" data-testid="save">Save</button>
       <div class="local-md-brand">
         <span class="local-md-logo" aria-hidden="true">
           <svg viewBox="0 0 64 64" role="img">
@@ -208,7 +207,20 @@ export async function mountApp(
         </span>
         <strong>Local Markdown</strong>
       </div>
+      <div class="local-md-mode-menu" aria-label="Editor mode">
+        <button type="button" class="local-md-toolbar-button local-md-mode-trigger" data-mode-trigger aria-expanded="false" aria-label="Editor mode" title="Editor mode">
+          ${uiIcon("suggestion")}
+          <span data-mode-label>Suggestions</span>
+          ${uiIcon("chevron-down")}
+        </button>
+        <div class="local-md-mode-popover">
+          <button type="button" data-testid="mode-rendered" aria-pressed="false" title="Editing">${uiIcon("pencil")}<span>Editing</span></button>
+          <button type="button" data-testid="mode-review" aria-pressed="true" title="Suggestions">${uiIcon("suggestion")}<span>Suggestions</span></button>
+          <button type="button" data-testid="mode-markdown" aria-pressed="false" title="Markdown">${uiIcon("markdown")}<span>Markdown</span></button>
+        </div>
+      </div>
       <div class="local-md-actions">
+        <div class="local-md-format-controls" data-toolbar-format-controls>
         <div class="local-md-format-menu">
           <button type="button" class="local-md-toolbar-button local-md-format-trigger" data-format-trigger aria-expanded="false" aria-label="Paragraph style" title="Paragraph style">
             ${uiIcon("align-left")}
@@ -239,33 +251,20 @@ export async function mountApp(
         <button type="button" class="local-md-toolbar-button" data-testid="add-comment" data-toolbar-command="comment" aria-label="Create annotation" title="Create annotation">${uiIcon("message-plus")}</button>
         <button type="button" class="local-md-toolbar-button" data-toolbar-command="link" aria-label="Insert link" title="Insert link">${uiIcon("link")}</button>
         <button type="button" class="local-md-toolbar-button" data-toolbar-command="image" aria-label="Insert image" title="Insert image">${uiIcon("image")}</button>
-        <span class="local-md-toolbar-separator" aria-hidden="true"></span>
-        <div class="local-md-mode-menu" aria-label="Editor mode">
-          <button type="button" class="local-md-toolbar-button local-md-mode-trigger" data-mode-trigger aria-expanded="false" aria-label="Editor mode" title="Editor mode">
-            ${uiIcon("suggestion")}
-            <span data-mode-label>Suggestions</span>
-            ${uiIcon("chevron-down")}
-          </button>
-          <div class="local-md-mode-popover">
-            <button type="button" data-testid="mode-rendered" aria-pressed="false" title="Editing">${uiIcon("pencil")}<span>Editing</span></button>
-            <button type="button" data-testid="mode-review" aria-pressed="true" title="Suggestions">${uiIcon("suggestion")}<span>Suggestions</span></button>
-            <button type="button" data-testid="mode-markdown" aria-pressed="false" title="Markdown">${uiIcon("markdown")}<span>Markdown</span></button>
-          </div>
         </div>
-        <label class="local-md-review-diff-control" data-testid="review-diff-control">
-          <span>Diff</span>
-          <select data-testid="review-diff-mode">
-            <option value="active">Active block</option>
-            <option value="all" selected>All blocks</option>
-            <option value="none">No diff</option>
-          </select>
-        </label>
-        <label class="local-md-block-id-control" data-testid="block-id-control">
-          <input type="checkbox" data-testid="include-block-ids" checked>
-          <span>Include block IDs</span>
-        </label>
-        <span data-testid="save-status">Saved</span>
+        <div class="local-md-overflow-menu" data-toolbar-overflow hidden>
+          <button type="button" class="local-md-toolbar-button" data-toolbar-overflow-trigger aria-label="More formatting options" title="More formatting options" aria-expanded="false">${uiIcon("more-vertical")}</button>
+          <div class="local-md-overflow-popover" data-toolbar-overflow-content></div>
+        </div>
       </div>
+      <div class="local-md-save-menu">
+        <button type="button" class="local-md-toolbar-save" data-testid="save">Save</button>
+        <button type="button" class="local-md-save-options" data-testid="save-options" aria-label="Save options" title="Save options" aria-expanded="false">${uiIcon("chevron-down")}</button>
+        <div class="local-md-save-popover" data-testid="save-options-menu">
+          <button type="button" data-testid="save-without-ids">Save without block IDs</button>
+        </div>
+      </div>
+      <span data-testid="save-status">Saved</span>
     </div>
   `;
 
@@ -383,14 +382,18 @@ export async function mountApp(
   mountRoot.replaceChildren(shell);
 
   const status = required("[data-testid='save-status']");
-  const toolbarActions = required<HTMLElement>(".local-md-actions");
+  const toolbar = required<HTMLElement>(".local-md-toolbar");
+  const toolbarActions = toolbar;
+  const formatControls = required<HTMLElement>("[data-toolbar-format-controls]");
+  const overflowMenu = required<HTMLElement>("[data-toolbar-overflow]");
+  const overflowTrigger = required<HTMLButtonElement>("[data-toolbar-overflow-trigger]");
+  const overflowContent = required<HTMLElement>("[data-toolbar-overflow-content]");
   const renderedButton = required<HTMLButtonElement>("[data-testid='mode-rendered']");
   const reviewButton = required<HTMLButtonElement>("[data-testid='mode-review']");
   const markdownButton = required<HTMLButtonElement>("[data-testid='mode-markdown']");
-  const reviewDiffControl = required<HTMLElement>("[data-testid='review-diff-control']");
-  const reviewDiffModeSelect = required<HTMLSelectElement>("[data-testid='review-diff-mode']");
-  const includeBlockIdsInput = required<HTMLInputElement>("[data-testid='include-block-ids']");
-  reviewDiffControl.hidden = true;
+  const saveOptionsButton = required<HTMLButtonElement>("[data-testid='save-options']");
+  const saveOptionsMenu = required<HTMLElement>("[data-testid='save-options-menu']");
+  const saveWithoutIdsButton = required<HTMLButtonElement>("[data-testid='save-without-ids']");
   const selectionAddCommentButton = required<HTMLButtonElement>(
     "[data-testid='selection-add-comment']",
   );
@@ -1797,6 +1800,48 @@ export async function mountApp(
     trigger?.setAttribute("aria-expanded", "false");
   };
 
+  const closeSaveOptionsMenu = () => {
+    saveOptionsMenu.classList.remove("local-md-save-menu-open");
+    saveOptionsButton.setAttribute("aria-expanded", "false");
+  };
+
+  const toggleSaveOptionsMenu = () => {
+    const open = !saveOptionsMenu.classList.contains("local-md-save-menu-open");
+    closeFormatMenu();
+    closeModeMenu();
+    saveOptionsMenu.classList.toggle("local-md-save-menu-open", open);
+    saveOptionsButton.setAttribute("aria-expanded", String(open));
+  };
+
+  const closeOverflowMenu = () => {
+    overflowMenu.classList.remove("local-md-overflow-menu-open");
+    overflowTrigger.setAttribute("aria-expanded", "false");
+  };
+
+  const toggleOverflowMenu = () => {
+    const open = !overflowMenu.classList.contains("local-md-overflow-menu-open");
+    closeFormatMenu();
+    closeModeMenu();
+    overflowMenu.classList.toggle("local-md-overflow-menu-open", open);
+    overflowTrigger.setAttribute("aria-expanded", String(open));
+  };
+
+  const formatControlItems = Array.from(formatControls.children);
+  const updateToolbarOverflow = () => {
+    closeOverflowMenu();
+    for (const item of formatControlItems) formatControls.append(item);
+    overflowMenu.hidden = true;
+    while (formatControls.scrollWidth > formatControls.clientWidth && formatControls.lastElementChild) {
+      overflowMenu.hidden = false;
+      const item = formatControls.lastElementChild;
+      overflowContent.prepend(item);
+    }
+    overflowMenu.hidden = overflowContent.childElementCount === 0;
+  };
+  const toolbarResizeObserver = new ResizeObserver(updateToolbarOverflow);
+  toolbarResizeObserver.observe(toolbar);
+  requestAnimationFrame(updateToolbarOverflow);
+
   const toggleModeMenu = () => {
     const menu = toolbarActions.querySelector<HTMLElement>(".local-md-mode-menu");
     const trigger = toolbarActions.querySelector<HTMLButtonElement>("[data-mode-trigger]");
@@ -1900,7 +1945,6 @@ export async function mountApp(
     markdownButton.setAttribute("aria-pressed", String(mode === "markdown"));
     updateModeTrigger(mode);
     closeModeMenu();
-    reviewDiffControl.hidden = mode !== "review";
     if (mode === "markdown") {
       syncMarkdownEditorSurface();
       selectionToolbar.hidden = true;
@@ -2210,7 +2254,7 @@ export async function mountApp(
     return picked;
   };
 
-  const save = async (forcePick: boolean) => {
+  const save = async (forcePick: boolean, includeBlockIds = state.includeBlockIds) => {
     try {
       logFileHandling("save start", {
         forcePick,
@@ -2232,7 +2276,8 @@ export async function mountApp(
         state.body = editor.value;
       }
       flushPendingCommentEditors();
-      state.body = state.includeBlockIds
+      state.includeBlockIds = includeBlockIds;
+      state.body = includeBlockIds
         ? ensureDocumentBlockIds(state.body)
         : stripDocumentBlockIds(state.body);
       if (state.mode === "markdown") editor.value = state.body;
@@ -2592,24 +2637,6 @@ export async function mountApp(
   renderedButton.addEventListener("click", () => void setMode("rendered"));
   reviewButton.addEventListener("click", () => void setMode("review"));
   markdownButton.addEventListener("click", () => void setMode("markdown"));
-  reviewDiffModeSelect.addEventListener("change", () => {
-    state.reviewDiffMode = reviewDiffModeSelect.value as ReviewDiffMode;
-    updateActiveReviewSuggestionFromSelection();
-    void refreshReviewDiffDecorations();
-  });
-  includeBlockIdsInput.addEventListener("change", () => {
-    state.includeBlockIds = includeBlockIdsInput.checked;
-    const sourceBody = state.mode === "markdown" ? editor.value : state.body;
-    state.body = state.includeBlockIds
-      ? ensureDocumentBlockIds(sourceBody)
-      : stripDocumentBlockIds(sourceBody);
-    state.markdown = composeMarkdown(state);
-    editor.value = state.body;
-    state.dirty = true;
-    commitHistory();
-    void render();
-    setStatus("Modified");
-  });
   toolbarActions.addEventListener("mousedown", (event) => {
     if ((event.target as HTMLElement | null)?.closest("[data-toolbar-command]"))
       event.preventDefault();
@@ -2631,6 +2658,14 @@ export async function mountApp(
       toggleModeMenu();
       return;
     }
+    const overflowTriggerTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+      "[data-toolbar-overflow-trigger]",
+    );
+    if (overflowTriggerTarget) {
+      event.preventDefault();
+      toggleOverflowMenu();
+      return;
+    }
     const command = (event.target as HTMLElement | null)?.closest<HTMLElement>(
       "[data-toolbar-command]",
     )?.dataset.toolbarCommand;
@@ -2644,6 +2679,8 @@ export async function mountApp(
     const target = event.target as HTMLElement | null;
     if (!target?.closest(".local-md-format-menu")) closeFormatMenu();
     if (!target?.closest(".local-md-mode-menu")) closeModeMenu();
+    if (!target?.closest(".local-md-overflow-menu")) closeOverflowMenu();
+    if (!target?.closest(".local-md-save-menu")) closeSaveOptionsMenu();
   });
   selectionToolbar.addEventListener("mousedown", (event) => event.preventDefault());
   selectionAddCommentButton.addEventListener("click", () => void addComment());
@@ -2687,6 +2724,14 @@ export async function mountApp(
   closeLlmPromptButton.addEventListener("click", hideLlmPrompt);
   toastSaveButton.addEventListener("click", () => void save(false));
   toastSaveMineButton.addEventListener("click", () => void save(false));
+  saveOptionsButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    toggleSaveOptionsMenu();
+  });
+  saveWithoutIdsButton.addEventListener("click", () => {
+    closeSaveOptionsMenu();
+    void save(false, false);
+  });
   toastLoadDiskButton.addEventListener("click", () => {
     void (async () => {
       await reloadFileFromDisk();
@@ -3008,6 +3053,7 @@ function uiIcon(
     | "list-numbers"
     | "markdown"
     | "message-plus"
+    | "more-vertical"
     | "pencil"
     | "suggestion"
     | "trash"
@@ -3078,6 +3124,11 @@ function uiIcon(
       <path d="M7 15v-6l3 3l3 -3v6" />
       <path d="M16 9v6" />
       <path d="M14 13l2 2l2 -2" />
+    `,
+    "more-vertical": `
+      <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
     `,
     "message-plus": `
       <path d="M8 9h8" />

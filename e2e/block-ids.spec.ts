@@ -8,7 +8,6 @@ test("block IDs are enabled by default for documents without IDs", async ({ page
   await page.getByTestId("mode-markdown").click();
   await page.getByTestId("markdown-editor").fill("# Title\n\nParagraph.");
 
-  await expect(page.getByTestId("include-block-ids")).toBeChecked();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-rendered").click();
   await page.locator("[data-mode-trigger]").click();
@@ -27,7 +26,6 @@ test("block ID toggle identifies only real document blocks", async ({ page }) =>
     .getByTestId("markdown-editor")
     .fill(["# Title", "", "Paragraph.", "", "[^ordinary]: Footnote body."].join("\n"));
 
-  await page.getByTestId("include-block-ids").check();
   const markdown = await page.getByTestId("markdown-editor").inputValue();
   expect(markdown.match(/<!-- markleft:block id="b[a-f0-9]{7}" -->/g)).toHaveLength(2);
   expect(markdown.slice(markdown.indexOf("[^ordinary]:"))).not.toContain("markleft:block");
@@ -55,7 +53,6 @@ test("renders and applies an append-only update suggestion", async ({ page }) =>
         "[^suggestion-s1-update-block-b55]: Updated paragraph.",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 
@@ -98,7 +95,6 @@ test("renders an append-only table update suggestion", async ({ page }) => {
         "    [^block-101-abcd]",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 
@@ -157,7 +153,6 @@ test("text suggestions after a mixed HTML and Markdown table replace their origi
         "[^suggestion-s2-update-block-bsecond]: Replacement second paragraph.",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 
@@ -188,7 +183,6 @@ test("diffs text inside corresponding list items", async ({ page }) => {
         "    - Keep the last item",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 
@@ -224,7 +218,6 @@ test("reveals the original image with a slider when its linked annotation is cli
         "    [^image-2500-5000-100-a1b2]",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 
@@ -300,7 +293,6 @@ test("image comparison slider supports keyboard control", async ({ page }) => {
         "[^suggestion-s7-update-block-bimage]: ![Suggested image](svg-object-comment-test.svg)",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
   await page.getByTestId("suggestion-discussion-card").click();
@@ -329,7 +321,6 @@ test("does not create an image comparison for a mixed-content replacement", asyn
         "[^suggestion-s8-update-block-bmixed]: Suggested caption with ![Suggested image](svg-object-comment-test.svg)",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 
@@ -351,7 +342,6 @@ test("diffs an append-only insertion against an empty prior state", async ({ pag
         "[^suggestion-s3-insert-after-block-bheading]: **TL;DR:** A compact fingerprint makes near-duplicates quick to identify.",
       ].join("\n"),
     );
-  await page.getByTestId("include-block-ids").check();
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-review").click();
 

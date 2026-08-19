@@ -31,12 +31,10 @@ test("toolbar mode dropdown switches between editing and suggestions", async ({ 
   await expect(page.locator(".local-md-mode-popover")).toBeVisible();
   await page.getByTestId("mode-review").click();
 
-  await expect(page.getByTestId("review-diff-control")).toBeVisible();
   await expect(page.locator("[data-mode-label]")).toHaveText("Suggestions");
 
   await page.locator("[data-mode-trigger]").click();
   await page.getByTestId("mode-rendered").click();
-  await expect(page.getByTestId("review-diff-control")).toBeHidden();
   await expect(page.locator("[data-mode-label]")).toHaveText("Editing");
 });
 
@@ -1329,7 +1327,7 @@ test("review diff delete markers render after toggling modes", async ({ page }) 
   await expect(page.locator(".local-md-diff-marker")).toHaveCount(1);
 });
 
-test("review mode supports all active and disabled visual diff modes", async ({ page }) => {
+test("review mode shows all visual diffs by default", async ({ page }) => {
   await openExample(page);
 
   await page.getByTestId("mode-markdown").click();
@@ -1350,27 +1348,7 @@ test("review mode supports all active and disabled visual diff modes", async ({ 
     );
 
   await page.getByTestId("mode-review").click();
-  await expect(page.getByTestId("review-diff-control")).toBeVisible();
-  await expect(page.getByTestId("review-diff-mode")).toHaveValue("all");
   await expect(page.locator(".local-md-diff-marker")).toHaveCount(2);
-
-  await page.getByTestId("review-diff-mode").selectOption("none");
-  await expect(page.locator(".local-md-diff-marker")).toHaveCount(0);
-  await expect.poll(() => totalDiffHighlightCount(page)).toBe(0);
-
-  await page.getByTestId("review-diff-mode").selectOption("active");
-  await expect(page.locator(".local-md-diff-marker")).toHaveCount(0);
-
-  await setCaretInReviewSuggestion(page, 0);
-  await expect(page.locator(".local-md-diff-marker")).toHaveCount(1);
-  await expect(page.locator(".local-md-diff-marker")).toHaveAttribute("data-original", "old");
-
-  await setCaretInReviewSuggestion(page, 1);
-  await expect(page.locator(".local-md-diff-marker")).toHaveCount(1);
-  await expect(page.locator(".local-md-review-suggestion").nth(1)).toContainText("Beta new.");
-
-  await setCaretInRenderedText(page, "Gamma plain.");
-  await expect(page.locator(".local-md-diff-marker")).toHaveCount(0);
 });
 
 test("review mode turns edits to original blocks into block suggestions", async ({ page }) => {
@@ -2158,16 +2136,6 @@ async function highlightRangeCount(page: Page, name: string): Promise<number> {
   );
 }
 
-async function totalDiffHighlightCount(page: Page): Promise<number> {
-  return page.evaluate(() =>
-    Array.from(CSS.highlights.entries()).reduce(
-      (count, [name, highlight]) =>
-        name.startsWith("local-md-diff-") ? count + Array.from(highlight).length : count,
-      0,
-    ),
-  );
-}
-
 async function setCaretInReviewSuggestion(page: Page, index: number): Promise<void> {
   await page
     .locator(".local-md-review-suggestion")
@@ -2184,29 +2152,6 @@ async function setCaretInReviewSuggestion(page: Page, index: number): Promise<vo
       selection?.addRange(range);
       document.dispatchEvent(new Event("selectionchange"));
     });
-}
-
-async function setCaretInRenderedText(page: Page, text: string): Promise<void> {
-  await page.getByTestId("rendered-editor").evaluate((root, needle) => {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    for (
-      let node = walker.nextNode() as Text | null;
-      node;
-      node = walker.nextNode() as Text | null
-    ) {
-      const index = node.data.indexOf(needle);
-      if (index === -1) continue;
-      const selection = document.getSelection();
-      const range = document.createRange();
-      range.setStart(node, index);
-      range.collapse(true);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-      document.dispatchEvent(new Event("selectionchange"));
-      return;
-    }
-    throw new Error(`Could not find text: ${needle}`);
-  }, text);
 }
 
 async function saveDraftComment(page: Page, text: string): Promise<void> {
