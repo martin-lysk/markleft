@@ -6,7 +6,11 @@ import {
 import { registerPwaFileLaunches, type PwaLaunchQueue } from "./host/pwa/file-launch";
 import { firstDroppedMarkdownHandle } from "./host/pwa/drag-drop";
 import { loadRecentDocuments, rememberRecentDocument, type RecentPwaDocument } from "./host/pwa/recent-documents";
-import { restoreProjectLocation, verifyProjectLocation } from "./host/pwa/project-access";
+import {
+  restoreProjectLocation,
+  verifyProjectLocation,
+  type PwaProjectLocation,
+} from "./host/pwa/project-access";
 import { HttpDocumentHost } from "./host/http/document-host";
 import { installPwaOpenShortcut } from "./host/pwa/open-shortcut";
 import { styles } from "./styles";
@@ -153,6 +157,7 @@ async function openDocument(handle: PwaFileHandle, directory?: PwaDirectoryHandl
     const project = (await restoreProjectLocation(handle)) ?? selectedProject;
     const host = new PwaDocumentHost(handle, project ?? undefined);
     const snapshot = await host.read();
+    setLocalDocumentTitle(handle, project);
     await rememberRecentDocument(handle, project?.root ?? directory);
     await mountApp(snapshot.markdown, false, {
       documentHost: host,
@@ -173,6 +178,7 @@ async function openDocument(handle: PwaFileHandle, directory?: PwaDirectoryHandl
           }
           const project = (await restoreProjectLocation(handle)) ?? verified;
           host.attachProject(project);
+          setLocalDocumentTitle(handle, project);
           await rememberRecentDocument(handle, project.root);
           return true;
         } catch (error) {
@@ -187,6 +193,11 @@ async function openDocument(handle: PwaFileHandle, directory?: PwaDirectoryHandl
   } catch (error) {
     await renderStartScreen(`Could not open ${handle.name}: ${errorMessage(error)}`);
   }
+}
+
+function setLocalDocumentTitle(handle: PwaFileHandle, project: PwaProjectLocation | null): void {
+  const path = project?.documentPath.join("/") || handle.name;
+  document.title = `Markleft — ${path}`;
 }
 
 async function openRemoteDocument(url: string): Promise<void> {
