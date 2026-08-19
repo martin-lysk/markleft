@@ -36,6 +36,7 @@ jobs:
       - run: |
           mkdir -p pages
           cp local-md.js bookmarklet.txt pages/
+          cp -R dist/pwa/. pages/
           cp -R dist/pwa pages/pwa
       - uses: actions/upload-pages-artifact@v3
         with:
