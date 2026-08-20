@@ -2,10 +2,10 @@
 # Review – don't chat
 
 <!-- markleft:block id="b246bcd0" -->
-**Markleft gives your and ai's remarks and suggestions on Markdown a place to live: in the document itself.**
+**Markleft gives your and your AI's remarks and suggestions on Markdown a place to live: in the document itself.**
 
 <!-- markleft:block id="b246bcd0" -->
-**Intall Now&#xA0;**
+**Install Now&#xA0;**
 
 <!-- markleft:block id="b246bcd0" -->
 **Video**
@@ -14,7 +14,7 @@
 ## Finally read those AI Plans
 
 <!-- markleft:block id="bc9095f5" -->
-AI rarely gets your intent right on the first prompt. Reading through a wall of text without a place to take notes sucks. You made it through? Great - now you type in your feedback "Make the third Sentence in the second Paragraph less technical". Than it comes back with a new File again - you read it again and check if your prompt was good... That sucks - We can do better!
+AI rarely gets your intent right on the first prompt. Reading through a wall of text without a place to take notes sucks. You made it through? Great—now you type in your feedback: “Make the third sentence in the second paragraph less technical.” Then it comes back with a new file—you read it again and check whether your prompt was good. That sucks. We can do better!
 
 <!-- markleft:block id="b246bcd0" -->
 **Markleft gives Markdown comments and suggestions a place to live: in the document itself.** Point to the exact text, block, image, table cell, or diagram; explain what matters; then review a proposed change before it becomes part of the file.
@@ -62,7 +62,7 @@ Open a local `.md`, `.markdown`, or `.mdx` file with **Open Markdown…** in the
 Once the page is installed as an app, Markdown files can open directly from Finder
 
 <!-- markleft:block id="b4abc016" -->
-**Intall Now**
+**Install Now**
 
 <!-- markleft:block id="b7829f91" -->
 ![A Markdown document is opened from Finder using Open With, then Markleft](./docs/landing-open-with.svg)
