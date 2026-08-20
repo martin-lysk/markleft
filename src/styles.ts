@@ -125,6 +125,8 @@ body {
 }
 .local-md-mode-toggle[hidden],
 .local-md-save-menu[hidden] { display: none !important; }
+.local-md-toolbar-landing .local-md-mode-toggle,
+.local-md-toolbar-landing .local-md-save-menu { display: none !important; }
 .local-md-mode-toggle button {
   min-width: 82px;
   height: 34px;

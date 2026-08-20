@@ -134,6 +134,8 @@ export interface MarkleftMountOptions {
   requestAssetAccess?(): Promise<boolean>;
   /** Optional host-native application menu, used by the installed PWA. */
   applicationMenu?: MarkleftApplicationMenu;
+  /** A built-in, read-only introduction rather than a user-opened document. */
+  isLandingPage?: boolean;
 }
 
 type ReviewDiffMode = "active" | "all" | "none";
@@ -403,6 +405,7 @@ export async function mountApp(
 
   const status = required("[data-testid='save-status']");
   const toolbar = required<HTMLElement>(".local-md-toolbar");
+  toolbar.classList.toggle("local-md-toolbar-landing", options.isLandingPage === true);
   if (options.applicationMenu) installApplicationMenu(toolbar, options.applicationMenu);
   const toolbarActions = toolbar;
   const formatControls = required<HTMLElement>("[data-toolbar-format-controls]");
@@ -1499,16 +1502,14 @@ export async function mountApp(
               : `<p class="local-md-muted">No linked comments.</p>`
           }
         </section>
-        <section class="local-md-review-discussion-section">
-          <h3>On suggestion</h3>
-          ${
-            discussion.suggestionComments.length > 0
-              ? discussion.suggestionComments
-                  .map((comment) => renderReviewCommentBox(comment))
-                  .join("")
-              : `<p class="local-md-muted">No comments yet.</p>`
-          }
-        </section>
+        ${
+          discussion.suggestionComments.length > 0
+            ? `<section class="local-md-review-discussion-section">
+                <h3>On suggestion</h3>
+                ${discussion.suggestionComments.map((comment) => renderReviewCommentBox(comment)).join("")}
+              </section>`
+            : ""
+        }
       `;
       card.onclick = (event) => {
         const action = (event.target as HTMLElement).closest<HTMLButtonElement>("button")?.dataset

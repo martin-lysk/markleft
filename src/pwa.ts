@@ -12,6 +12,7 @@ import {
   type PwaProjectLocation,
 } from "./host/pwa/project-access";
 import { HttpDocumentHost } from "./host/http/document-host";
+import type { MarkleftDocumentHost } from "./host/document-host";
 import { installPwaOpenShortcut } from "./host/pwa/open-shortcut";
 import { styles } from "./styles";
 import {
@@ -19,6 +20,7 @@ import {
   type MarkleftApplicationMenu,
   type MarkleftApplicationMenuItem,
 } from "./ui";
+import landingMarkdown from "../landing.md";
 
 declare const __MARKLEFT_PWA_BUILD__: string;
 
@@ -51,7 +53,6 @@ const pickerOptions = {
 
 const crossWindowMessageType = "markleft:pwa-open-file";
 const crossWindowReadyType = "markleft:pwa-open-file-ready";
-const hostedIntroductionUrl = "https://github.com/martin-lysk/markleft/blob/main/landing.md";
 const installNudgeDismissedAtKey = "markleft:pwa-install-nudge-dismissed-at";
 const installNudgeCooldownMs = 21 * 24 * 60 * 60 * 1000;
 let hasOpenDocument = false;
@@ -80,14 +81,6 @@ function pwaShouldShowInstallNudge(): boolean {
 function isInstalledPwa(): boolean {
   return window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true;
-}
-
-function shouldOpenHostedIntroduction(url: URL): boolean {
-  const preview = url.hostname === "localhost" && url.searchParams.get("previewIntroduction") === "1";
-  return (url.protocol === "https:" || preview) &&
-    !isInstalledPwa() &&
-    !url.searchParams.has("httpPath") &&
-    !url.searchParams.has("open");
 }
 
 function pwaApplicationMenu(): MarkleftApplicationMenu {
@@ -142,11 +135,38 @@ async function start(): Promise<void> {
     await openRemoteDocument(httpPath);
     return;
   }
-  if (shouldOpenHostedIntroduction(launchUrl)) {
-    await openRemoteDocument(hostedIntroductionUrl);
+  if ((await loadRecentDocuments()).length === 0) {
+    await openLandingPage();
     return;
   }
   await renderStartScreen();
+}
+
+async function openLandingPage(): Promise<void> {
+  const host: MarkleftDocumentHost = {
+    id: "markleft:landing",
+    displayName: "Markleft",
+    capabilities: { canWatch: false, canResolveAssets: true, canInvokeAgent: false, canWrite: false },
+    read: async () => ({ markdown: landingMarkdown, revision: "markleft:landing" }),
+    write: async () => {
+      throw new Error("The Markleft introduction is read-only. Open a local Markdown file to save changes.");
+    },
+    resolveAsset: async (source: string) => {
+      try {
+        return new URL(source, window.location.href).href;
+      } catch {
+        return null;
+      }
+    },
+  };
+  await mountApp(landingMarkdown, false, {
+    documentHost: host,
+    documentPath: "landing.md",
+    applicationMenu: pwaApplicationMenu(),
+    isLandingPage: true,
+  });
+  document.title = "Markleft — Markdown review for humans and AI";
+  refreshInstallPromotion();
 }
 
 async function renderStartScreen(message = "Open a local Markdown file to begin."): Promise<void> {

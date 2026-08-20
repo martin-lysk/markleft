@@ -65,7 +65,7 @@ Once the page is installed as an app, Markdown files can open directly from Find
 **Intall Now**
 
 <!-- markleft:block id="b7829f91" -->
-![A Markdown document is opened from Finder using Open With, then Markleft](blob:https://markleft.md/ca4c010a-d677-4bbd-90ae-1e3c5e62717f)
+![A Markdown document is opened from Finder using Open With, then Markleft](./docs/landing-open-with.svg)
 
 <!-- markleft:block id="b10bab67" -->
 The installed app is optional. The website is already the editor: open a document when you are ready.
