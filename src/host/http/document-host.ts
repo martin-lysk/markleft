@@ -31,7 +31,7 @@ export class HttpDocumentHost implements MarkleftDocumentHost {
   }
 
   static async open(requestedUrl: string, fetcher: typeof fetch = fetch): Promise<HttpDocumentHost> {
-    const requested = parseHttpsUrl(requestedUrl);
+    const requested = normalizeGithubBlobUrl(parseHttpsUrl(requestedUrl));
     let response: Response;
     try {
       response = await fetcher(requested.href, {
@@ -52,7 +52,7 @@ export class HttpDocumentHost implements MarkleftDocumentHost {
     if (new TextEncoder().encode(markdown).byteLength > maxDocumentBytes) {
       throw new Error("The remote Markdown file is larger than Markleft's 5 MB review limit.");
     }
-    return new HttpDocumentHost(requested.href, canonical, markdown);
+    return new HttpDocumentHost(requestedUrl, canonical, markdown);
   }
 
   async read(): Promise<MarkleftDocumentSnapshot> {
@@ -71,6 +71,21 @@ export class HttpDocumentHost implements MarkleftDocumentHost {
       return null;
     }
   }
+}
+
+function normalizeGithubBlobUrl(url: URL): URL {
+  const host = url.hostname.toLowerCase();
+  if (host !== "github.com" && host !== "www.github.com") return url;
+
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments.length < 5 || segments[2] !== "blob") return url;
+
+  const raw = new URL(url.href);
+  raw.hostname = "raw.githubusercontent.com";
+  raw.pathname = `/${segments[0]}/${segments[1]}/${segments.slice(3).join("/")}`;
+  raw.search = "";
+  raw.hash = "";
+  return raw;
 }
 
 function parseHttpsUrl(value: string): URL {

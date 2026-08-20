@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Open a Markdown file in Markleft from Finder</title>
+  <desc id="desc">A Finder-style file browser shows a Markdown document. Its Open With context menu points to the Markleft app, which opens the document for review.</desc>
+  <defs>
+    <linearGradient id="backdrop" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4f1e8"/><stop offset="1" stop-color="#e4ece7"/></linearGradient>
+    <linearGradient id="finder" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dff3ff"/><stop offset="1" stop-color="#5ca9e0"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="9" stdDeviation="11" flood-color="#223238" flood-opacity=".18"/></filter>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto"><path d="M0 0 10 5.5 0 11z" fill="#3a5061"/></marker>
+  </defs>
+  <rect width="1200" height="620" rx="30" fill="url(#backdrop)"/>
+  <text x="70" y="75" fill="#26313a" font-family="system-ui, sans-serif" font-size="25" font-weight="700">Open Markdown where it already lives</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="118" width="460" height="395" rx="22" fill="#fffefa" stroke="#c9c2b7" stroke-width="2"/>
+    <rect x="70" y="118" width="460" height="54" rx="22" fill="#e6e2da"/>
+    <circle cx="106" cy="145" r="8" fill="#ef6a5b"/><circle cx="132" cy="145" r="8" fill="#f3bb48"/><circle cx="158" cy="145" r="8" fill="#5fbe70"/>
+    <rect x="92" y="197" width="126" height="294" rx="12" fill="#edf1ed"/>
+    <text x="116" y="235" fill="#52636a" font-family="system-ui, sans-serif" font-size="16">Favorites</text>
+    <path d="M116 270h75M116 306h61M116 342h80" stroke="#85959a" stroke-width="9" stroke-linecap="round"/>
+    <text x="247" y="216" fill="#52636a" font-family="system-ui, sans-serif" font-size="15">Documents</text>
+    <path d="M261 247h206M261 278h206M261 309h206M261 340h206M261 371h206" stroke="#d9d4ca" stroke-width="1"/>
+    <path d="M270 290h28v35h-28z" fill="#fffdf8" stroke="#6b7d84" stroke-width="2"/><path d="m291 290 7 7h-7z" fill="#dce6e8"/>
+    <text x="315" y="314" fill="#26313a" font-family="system-ui, sans-serif" font-size="17" font-weight="650">strategy-review.md</text>
+    <rect x="251" y="281" width="223" height="51" rx="8" fill="#dcecf5" opacity=".9"/>
+    <path d="M270 290h28v35h-28z" fill="#fffdf8" stroke="#3b7ca5" stroke-width="2"/><path d="m291 290 7 7h-7z" fill="#cce2ef"/>
+
+    <g filter="url(#shadow)">
+      <rect x="337" y="327" width="232" height="145" rx="12" fill="#fffefa" stroke="#bdb5a9" stroke-width="2"/>
+      <text x="361" y="359" fill="#26313a" font-family="system-ui, sans-serif" font-size="16">Open</text>
+      <text x="361" y="391" fill="#26313a" font-family="system-ui, sans-serif" font-size="16">Open With</text>
+      <path d="m528 380 9 10-9 10" fill="none" stroke="#5b6c73" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M353 408h198" stroke="#ded7cb" stroke-width="1"/>
+      <rect x="350" y="419" width="204" height="38" rx="7" fill="#e8f0ec"/>
+      <rect x="363" y="427" width="23" height="23" rx="5" fill="#3a5061"/>
+      <text x="397" y="445" fill="#26313a" font-family="system-ui, sans-serif" font-size="16" font-weight="700">Markleft</text>
+    </g>
+  </g>
+
+  <path d="M560 314h113" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="704" y="144" width="426" height="344" rx="22" fill="#fffefa" stroke="#c9c2b7" stroke-width="2"/>
+    <rect x="704" y="144" width="426" height="58" rx="22" fill="#f1eee7"/>
+    <circle cx="739" cy="173" r="8" fill="#ef6a5b"/><circle cx="765" cy="173" r="8" fill="#f3bb48"/><circle cx="791" cy="173" r="8" fill="#5fbe70"/>
+    <text x="919" y="179" text-anchor="middle" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Markleft</text>
+    <rect x="738" y="225" width="358" height="215" rx="12" fill="#fffdf8" stroke="#d4cdc0" stroke-width="2"/>
+    <text x="774" y="276" fill="#26313a" font-family="system-ui, sans-serif" font-size="22" font-weight="700">strategy-review.md</text>
+    <path d="M774 314h230M774 345h269M774 376h197" stroke="#52636a" stroke-width="10" stroke-linecap="round"/>
+    <rect x="770" y="334" width="179" height="22" rx="5" fill="#fde6a9"/>
+    <circle cx="968" cy="346" r="14" fill="#fffefa" stroke="#e9854a" stroke-width="3"/>
+    <text x="968" y="351" text-anchor="middle" fill="#a64f20" font-family="system-ui, sans-serif" font-size="14" font-weight="700">1</text>
+    <rect x="1015" y="298" width="60" height="84" rx="10" fill="#fffefa" stroke="#3a5061" stroke-width="2"/>
+    <path d="M1029 321h31M1029 342h24" stroke="#52636a" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <text x="300" y="563" text-anchor="middle" fill="#52636a" font-family="system-ui, sans-serif" font-size="17">Finder → Open With → Markleft</text>
+  <text x="918" y="563" text-anchor="middle" fill="#52636a" font-family="system-ui, sans-serif" font-size="17">Review and save the same file</text>
+</svg>

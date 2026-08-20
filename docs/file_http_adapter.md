@@ -43,6 +43,8 @@ type DocumentSource =
 
 `canonicalUrl` is the final `Response.url` after redirects. It, not the query parameter text, is the base URL for relative references in a remote Markdown document.
 
+For GitHub documents, the adapter also accepts the normal repository URL (`https://github.com/<owner>/<repo>/blob/<ref>/<path>.md`). Before fetching, it translates that URL to `https://raw.githubusercontent.com/<owner>/<repo>/<ref>/<path>.md`; the original URL remains recorded as `requestedUrl`. This means links copied from GitHub work directly, while relative images resolve beside the actual Markdown source.
+
 The source descriptor is local application state. It is never inserted into Markdown and it must never be sent to a remote service unless the user initiates that operation.
 
 ## Asset resolution is source-specific

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Markleft review loop with OpenAI and Claude</title>
+  <desc id="desc">A Markdown document receives precise feedback. OpenAI or Claude prepares a proposal, and the reviewer accepts, discards, or refines it in the same document.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf8"/><stop offset="1" stop-color="#edf2ee"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#24333a" flood-opacity=".14"/></filter>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto"><path d="M0 0 10 5.5 0 11z" fill="#3a5061"/></marker>
+  </defs>
+  <rect width="1200" height="560" rx="30" fill="url(#background)"/>
+  <text x="70" y="75" fill="#26313a" font-family="system-ui, sans-serif" font-size="25" font-weight="700">One Markdown file. A deliberate review loop.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="130" width="280" height="200" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <path d="M112 178h125M112 216h185M112 254h152" stroke="#4b5960" stroke-width="12" stroke-linecap="round" opacity=".82"/>
+    <rect x="112" y="243" width="170" height="22" rx="6" fill="#fde6a9"/>
+    <circle cx="294" cy="254" r="15" fill="#fffefa" stroke="#e9854a" stroke-width="3"/>
+    <text x="294" y="260" text-anchor="middle" fill="#a64f20" font-family="system-ui, sans-serif" font-size="16" font-weight="700">1</text>
+  </g>
+  <text x="70" y="374" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Markdown + comment</text>
+  <text x="70" y="400" fill="#637078" font-family="system-ui, sans-serif" font-size="15">The source and intent stay together.</text>
+
+  <path d="M372 230h98" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="490" y="130" width="240" height="200" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <rect x="518" y="166" width="86" height="72" rx="14" fill="#f0f1ed"/>
+    <g fill="none" stroke="#26313a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m552 188 13-8 13 8v16l-13 8-13-8z"/>
+      <path d="m552 188 13 8 13-8M552 204l13-8 13 8"/>
+      <path d="m565 180v32"/>
+    </g>
+    <text x="561" y="264" text-anchor="middle" fill="#26313a" font-family="system-ui, sans-serif" font-size="14" font-weight="700">OpenAI</text>
+    <rect x="616" y="166" width="86" height="72" rx="14" fill="#fff0e6"/>
+    <path d="m659 180 5 14 14-5-9 12 13 7-15 1 1 15-10-11-10 11 1-15-15-1 13-7-9-12 14 5z" fill="#d27643"/>
+    <text x="659" y="264" text-anchor="middle" fill="#8a4828" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Claude</text>
+    <path d="M531 282h158" stroke="#c7dbd1" stroke-width="2" stroke-dasharray="5 6"/>
+    <rect x="534" y="292" width="152" height="24" rx="8" fill="#e9f2ed"/>
+    <text x="610" y="310" text-anchor="middle" fill="#31545d" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Proposed change</text>
+  </g>
+  <text x="490" y="374" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">AI prepares a proposal</text>
+  <text x="490" y="400" fill="#637078" font-family="system-ui, sans-serif" font-size="15">Use the assistant that fits your workflow.</text>
+
+  <path d="M752 230h98" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="870" y="130" width="260" height="200" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <rect x="910" y="171" width="175" height="45" rx="10" fill="#e4f0e8"/>
+    <path d="M930 194h134" stroke="#3f7d68" stroke-width="8" stroke-linecap="round"/>
+    <rect x="910" y="230" width="175" height="45" rx="10" fill="#f8ead8"/>
+    <path d="M930 253h102" stroke="#a95c2f" stroke-width="8" stroke-linecap="round"/>
+    <path d="m941 295 13 13 25-30" fill="none" stroke="#3f7d68" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M988 295h78" stroke="#3a5061" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <text x="870" y="374" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Review the suggestion</text>
+  <text x="870" y="400" fill="#637078" font-family="system-ui, sans-serif" font-size="15">Accept, discard, or refine.</text>
+
+  <path d="M1015 446C860 476 340 476 204 446" fill="none" stroke="#82979d" stroke-width="4" stroke-dasharray="10 12" marker-end="url(#arrow)"/>
+  <text x="600" y="526" text-anchor="middle" fill="#52636a" font-family="system-ui, sans-serif" font-size="17">Feedback, proposal, and decision stay connected to the same file.</text>
+</svg>

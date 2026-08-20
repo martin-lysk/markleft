@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { resolveDocumentAssets } from "../src/host/document-assets";
+import { resolveDocumentAssets, restoreAuthoredBlobImageSources } from "../src/host/document-assets";
 import type { MarkleftDocumentHost } from "../src/host/document-host";
 
 function host(resolveAsset: (path: string) => Promise<string | null>): MarkleftDocumentHost {
@@ -15,6 +15,15 @@ function host(resolveAsset: (path: string) => Promise<string | null>): MarkleftD
 }
 
 describe("document assets", () => {
+  it("never lets an image-comparison blob URL replace the authored image URL", () => {
+    const restored = restoreAuthoredBlobImageSources(
+      "![Review loop](./docs/landing-review-loop-v4.svg)",
+      "![Review loop](blob:http://localhost:4174/65017949-b123-4249-a506-d4d88419ea49)",
+    );
+
+    expect(restored).toBe("![Review loop](./docs/landing-review-loop-v4.svg)");
+  });
+
   it("keeps Markdown-relative sources out of the document model while using a resolved display URL", async () => {
     const root = document.createElement("article");
     root.innerHTML = '<img src="./images/flow.svg" alt="Flow">';
@@ -23,6 +32,7 @@ describe("document assets", () => {
 
     expect(result.unresolvedRelativeSources).toEqual([]);
     expect(root.querySelector("img")?.src).toBe("blob:markleft-flow");
+    expect(root.querySelector("img")?.dataset.markleftMarkdownSource).toBe("./images/flow.svg");
   });
 
   it("replaces an inaccessible PWA-local image with an actionable visual placeholder", async () => {

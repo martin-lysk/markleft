@@ -1,4 +1,5 @@
 import { htmlToMarkdown } from "../markdown/from-html";
+import { restoreAuthoredBlobImageSources, restoreAuthoredImageSources } from "../host/document-assets";
 import {
   composeMarkdown,
   mergeImportedBodyWithPrevious,
@@ -25,12 +26,16 @@ export async function syncRenderedToMarkdown(
   state: SyncState,
 ): Promise<void> {
   const clone = rendered.cloneNode(true) as HTMLElement;
+  restoreAuthoredImageSources(clone);
   restoreMermaidDiagrams(clone);
   restoreRenderedHtmlCommentElements(clone);
   restoreLocalCommentReferences(clone);
   injectPersistentBlockIdComments(clone);
   normalizeElement(clone);
-  const convertedBody = unescapeFootnoteReferences(unescapeCommentReferences(await htmlToMarkdown(clone.innerHTML)));
+  const convertedBody = restoreAuthoredBlobImageSources(
+    state.body ?? "",
+    unescapeFootnoteReferences(unescapeCommentReferences(await htmlToMarkdown(clone.innerHTML))),
+  );
   const restoredBody = restoreFootnoteDefinitions(restoreCommentDefinitions(convertedBody, state.body ?? ""), state.body ?? "");
   const body = mergeImportedBodyWithPrevious(
     state.body ?? "",

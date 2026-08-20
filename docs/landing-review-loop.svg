@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540" role="img" aria-labelledby="title desc">
+  <title id="title">Markleft review loop</title>
+  <desc id="desc">A Markdown document receives a precise comment, an assistant prepares a suggestion, and the reviewer accepts or refines it in the same document.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fffdf8"/>
+      <stop offset="1" stop-color="#edf2ee"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#24333a" flood-opacity=".14"/>
+    </filter>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto">
+      <path d="M0 0 10 5.5 0 11z" fill="#3a5061"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="540" rx="30" fill="url(#background)"/>
+  <text x="70" y="75" fill="#26313a" font-family="system-ui, sans-serif" font-size="25" font-weight="700">One Markdown file. A deliberate review loop.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="130" width="280" height="290" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <path d="M112 178h125M112 216h185M112 254h152M112 292h184M112 330h112" stroke="#4b5960" stroke-width="12" stroke-linecap="round" opacity=".82"/>
+    <rect x="112" y="281" width="170" height="22" rx="6" fill="#fde6a9"/>
+    <circle cx="294" cy="292" r="15" fill="#fffefa" stroke="#e9854a" stroke-width="3"/>
+    <text x="294" y="298" text-anchor="middle" fill="#a64f20" font-family="system-ui, sans-serif" font-size="16" font-weight="700">1</text>
+    <text x="112" y="378" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Markdown</text>
+    <text x="112" y="402" fill="#637078" font-family="system-ui, sans-serif" font-size="15">The source stays canonical.</text>
+  </g>
+
+  <path d="M372 275h108" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="500" y="155" width="220" height="240" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <path d="M556 215c17-22 47-22 64 0" fill="none" stroke="#3a5061" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="570" cy="244" r="7" fill="#3a5061"/><circle cx="606" cy="244" r="7" fill="#3a5061"/>
+    <path d="M555 276c20 15 48 15 68 0" fill="none" stroke="#e9854a" stroke-width="7" stroke-linecap="round"/>
+    <path d="M532 315h156" stroke="#d9e6de" stroke-width="38" stroke-linecap="round"/>
+    <text x="610" y="325" text-anchor="middle" fill="#31545d" font-family="system-ui, sans-serif" font-size="17" font-weight="700">Precise intent</text>
+    <text x="610" y="370" text-anchor="middle" fill="#637078" font-family="system-ui, sans-serif" font-size="15">Comment what matters.</text>
+  </g>
+
+  <path d="M742 275h108" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="870" y="130" width="260" height="290" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <rect x="910" y="177" width="175" height="62" rx="10" fill="#e4f0e8"/>
+    <path d="M930 208h134" stroke="#3f7d68" stroke-width="8" stroke-linecap="round"/>
+    <rect x="910" y="258" width="175" height="56" rx="10" fill="#f8ead8"/>
+    <path d="M930 286h102" stroke="#a95c2f" stroke-width="8" stroke-linecap="round"/>
+    <path d="M910 344h68" stroke="#3a5061" stroke-width="9" stroke-linecap="round"/>
+    <path d="m1000 335 15 15 28-34" fill="none" stroke="#3f7d68" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="910" y="378" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Review the suggestion</text>
+    <text x="910" y="402" fill="#637078" font-family="system-ui, sans-serif" font-size="15">Accept, discard, or refine.</text>
+  </g>
+
+  <path d="M1010 454C870 510 330 510 208 454" fill="none" stroke="#82979d" stroke-width="4" stroke-dasharray="10 12" marker-end="url(#arrow)"/>
+  <text x="600" y="500" text-anchor="middle" fill="#52636a" font-family="system-ui, sans-serif" font-size="17">Feedback, proposal, and decision stay connected to the same file.</text>
+</svg>

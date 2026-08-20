@@ -18,6 +18,10 @@ export async function resolveDocumentAssets(
       if (!source || !isRelativeAssetSource(source)) return;
       const resolved = await host.resolveAsset?.(source);
       if (resolved) {
+        // `resolved` may be a temporary blob URL supplied by the PWA host. Keep
+        // the authored Markdown source alongside the display URL so rendered-mode
+        // editing can never save that ephemeral transport URL back into the file.
+        image.dataset.markleftMarkdownSource = source;
         image.src = resolved;
         return;
       }
@@ -26,6 +30,35 @@ export async function resolveDocumentAssets(
     }),
   );
   return { unresolvedRelativeSources: [...unresolved] };
+}
+
+/** Restore Markdown-authored image sources after a host substituted display URLs. */
+export function restoreAuthoredImageSources(root: ParentNode): void {
+  for (const image of root.querySelectorAll<HTMLImageElement>("img[data-markleft-markdown-source]")) {
+    const source = image.dataset.markleftMarkdownSource;
+    if (source) image.setAttribute("src", source);
+    delete image.dataset.markleftMarkdownSource;
+  }
+}
+
+/**
+ * A final serializer safeguard for image-comparison DOM which can be rebuilt
+ * without the display-source dataset. Blob URLs must never become Markdown.
+ */
+export function restoreAuthoredBlobImageSources(previousMarkdown: string, nextMarkdown: string): string {
+  const previousImages = Array.from(previousMarkdown.matchAll(/!\[([^\]\n]*)\]\(([^)\n]+)\)/g)).map(
+    (match) => ({ alt: match[1] ?? "", source: match[2] ?? "" }),
+  );
+  if (previousImages.length === 0 || !nextMarkdown.includes("blob:")) return nextMarkdown;
+
+  const used = new Set<number>();
+  return nextMarkdown.replace(/!\[([^\]\n]*)\]\(([^)\n]+)\)/g, (markdown, alt, source) => {
+    if (!String(source).startsWith("blob:")) return markdown;
+    const index = previousImages.findIndex((image, candidate) => !used.has(candidate) && image.alt === alt);
+    if (index === -1) return markdown;
+    used.add(index);
+    return `![${alt}](${previousImages[index]?.source})`;
+  });
 }
 
 function isRelativeAssetSource(value: string): boolean {

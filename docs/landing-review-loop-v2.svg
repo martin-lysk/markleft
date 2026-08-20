@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540" role="img" aria-labelledby="title desc">
+  <title id="title">Markleft review loop with AI proposal</title>
+  <desc id="desc">A Markdown document receives a precise comment, an AI prepares a proposal, and the reviewer decides whether to accept, discard, or refine the proposed change.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf8"/><stop offset="1" stop-color="#edf2ee"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#24333a" flood-opacity=".14"/></filter>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto"><path d="M0 0 10 5.5 0 11z" fill="#3a5061"/></marker>
+  </defs>
+  <rect width="1200" height="540" rx="30" fill="url(#background)"/>
+  <text x="70" y="75" fill="#26313a" font-family="system-ui, sans-serif" font-size="25" font-weight="700">One Markdown file. A deliberate review loop.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="130" width="280" height="270" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <path d="M112 178h125M112 216h185M112 254h152M112 292h184" stroke="#4b5960" stroke-width="12" stroke-linecap="round" opacity=".82"/>
+    <rect x="112" y="281" width="170" height="22" rx="6" fill="#fde6a9"/>
+    <circle cx="294" cy="292" r="15" fill="#fffefa" stroke="#e9854a" stroke-width="3"/>
+    <text x="294" y="298" text-anchor="middle" fill="#a64f20" font-family="system-ui, sans-serif" font-size="16" font-weight="700">1</text>
+    <text x="112" y="350" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Markdown + comment</text>
+    <text x="112" y="374" fill="#637078" font-family="system-ui, sans-serif" font-size="15">The source and intent stay together.</text>
+  </g>
+
+  <path d="M372 260h98" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="490" y="130" width="240" height="270" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <rect x="524" y="166" width="172" height="92" rx="16" fill="#dcece5"/>
+    <rect x="555" y="188" width="110" height="48" rx="13" fill="#3a5061"/>
+    <circle cx="585" cy="212" r="6" fill="#fffefa"/><circle cx="635" cy="212" r="6" fill="#fffefa"/>
+    <path d="M597 225h26" stroke="#91d0ba" stroke-width="5" stroke-linecap="round"/>
+    <path d="M610 176v-17M601 168h18" stroke="#e9854a" stroke-width="5" stroke-linecap="round"/>
+    <rect x="524" y="278" width="172" height="48" rx="10" fill="#edf4f0" stroke="#9fc5b3" stroke-width="2"/>
+    <text x="610" y="308" text-anchor="middle" fill="#31545d" font-family="system-ui, sans-serif" font-size="17" font-weight="700">Proposed change</text>
+    <text x="610" y="360" text-anchor="middle" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">AI prepares a proposal</text>
+    <text x="610" y="383" text-anchor="middle" fill="#637078" font-family="system-ui, sans-serif" font-size="15">It responds to the linked feedback.</text>
+  </g>
+
+  <path d="M752 260h98" fill="none" stroke="#3a5061" stroke-width="5" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="870" y="130" width="260" height="270" rx="18" fill="#fffefa" stroke="#cfc6b8" stroke-width="2"/>
+    <rect x="910" y="177" width="175" height="56" rx="10" fill="#e4f0e8"/>
+    <path d="M930 205h134" stroke="#3f7d68" stroke-width="8" stroke-linecap="round"/>
+    <rect x="910" y="248" width="175" height="56" rx="10" fill="#f8ead8"/>
+    <path d="M930 276h102" stroke="#a95c2f" stroke-width="8" stroke-linecap="round"/>
+    <path d="M910 331h68" stroke="#3a5061" stroke-width="9" stroke-linecap="round"/>
+    <path d="m1000 322 15 15 28-34" fill="none" stroke="#3f7d68" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="910" y="360" fill="#26313a" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Review the suggestion</text>
+    <text x="910" y="383" fill="#637078" font-family="system-ui, sans-serif" font-size="15">Accept, discard, or refine.</text>
+  </g>
+
+  <path d="M1015 438C860 472 340 472 204 438" fill="none" stroke="#82979d" stroke-width="4" stroke-dasharray="10 12" marker-end="url(#arrow)"/>
+  <text x="600" y="514" text-anchor="middle" fill="#52636a" font-family="system-ui, sans-serif" font-size="17">Feedback, proposal, and decision stay connected to the same file.</text>
+</svg>

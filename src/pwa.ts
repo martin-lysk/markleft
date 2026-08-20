@@ -31,6 +31,11 @@ interface PwaWindow extends Window {
   launchQueue?: PwaLaunchQueue;
 }
 
+interface PwaInstallPromptEvent extends Event {
+  prompt(): Promise<{ outcome?: "accepted" | "dismissed" } | void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 const pickerOptions = {
   multiple: false,
   types: [
@@ -46,7 +51,44 @@ const pickerOptions = {
 
 const crossWindowMessageType = "markleft:pwa-open-file";
 const crossWindowReadyType = "markleft:pwa-open-file-ready";
+const hostedIntroductionUrl = "https://github.com/martin-lysk/markleft/blob/main/landing.md";
+const installNudgeDismissedAtKey = "markleft:pwa-install-nudge-dismissed-at";
+const installNudgeCooldownMs = 21 * 24 * 60 * 60 * 1000;
 let hasOpenDocument = false;
+let deferredInstallPrompt: PwaInstallPromptEvent | null = null;
+
+function pwaCanOfferInstall(): boolean {
+  return deferredInstallPrompt !== null && !isInstalledPwa();
+}
+
+function isLocalInstallNudgePreview(): boolean {
+  const url = new URL(window.location.href);
+  return url.hostname === "localhost" && url.searchParams.get("previewInstall") === "1";
+}
+
+function pwaShouldShowInstallNudge(): boolean {
+  if (isLocalInstallNudgePreview()) return true;
+  if (!pwaCanOfferInstall()) return false;
+  try {
+    const dismissedAt = Number(window.localStorage.getItem(installNudgeDismissedAtKey));
+    return !Number.isFinite(dismissedAt) || Date.now() - dismissedAt >= installNudgeCooldownMs;
+  } catch {
+    return true;
+  }
+}
+
+function isInstalledPwa(): boolean {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+function shouldOpenHostedIntroduction(url: URL): boolean {
+  const preview = url.hostname === "localhost" && url.searchParams.get("previewIntroduction") === "1";
+  return (url.protocol === "https:" || preview) &&
+    !isInstalledPwa() &&
+    !url.searchParams.has("httpPath") &&
+    !url.searchParams.has("open");
+}
 
 function pwaApplicationMenu(): MarkleftApplicationMenu {
   return {
@@ -59,9 +101,11 @@ function pwaApplicationMenu(): MarkleftApplicationMenu {
           shortcut: "⌘O",
           action: () => openFromPicker(),
         },
-        { kind: "separator" },
-        { kind: "label", label: "Open recent" },
       ];
+      if (pwaCanOfferInstall()) {
+        items.push({ kind: "action", label: "Install Markleft", action: () => promptToInstall() });
+      }
+      items.push({ kind: "separator" }, { kind: "label", label: "Open recent" });
       if (recent.length === 0) {
         items.push({ kind: "action", label: "No recent documents", disabled: true, action: () => undefined });
       } else {
@@ -84,6 +128,7 @@ function pwaApplicationMenu(): MarkleftApplicationMenu {
 
 async function start(): Promise<void> {
   installStyles();
+  installPwaInstallPromotion();
   registerServiceWorker();
   installCrossWindowFileReceiver();
   installDragAndDrop();
@@ -91,9 +136,14 @@ async function start(): Promise<void> {
   registerPwaFileLaunches(window as PwaWindow, (handle) => {
     void openIncomingDocument(handle);
   });
-  const httpPath = new URL(window.location.href).searchParams.get("httpPath");
+  const launchUrl = new URL(window.location.href);
+  const httpPath = launchUrl.searchParams.get("httpPath");
   if (httpPath) {
     await openRemoteDocument(httpPath);
+    return;
+  }
+  if (shouldOpenHostedIntroduction(launchUrl)) {
+    await openRemoteDocument(hostedIntroductionUrl);
     return;
   }
   await renderStartScreen();
@@ -102,6 +152,27 @@ async function start(): Promise<void> {
 async function renderStartScreen(message = "Open a local Markdown file to begin."): Promise<void> {
   const recent = await loadRecentDocuments();
   document.body.replaceChildren();
+  const toolbar = document.createElement("div");
+  toolbar.className = "local-md-toolbar local-md-toolbar-start";
+  toolbar.dataset.localMdWrapper = "true";
+  toolbar.innerHTML = `
+    <div class="local-md-app-menu markleft-pwa-start-menu">
+      <button type="button" class="local-md-toolbar-button local-md-app-menu-trigger" data-start-menu-trigger aria-expanded="false">
+        <span>Markleft</span>${uiChevronDown()}
+      </button>
+      <div class="local-md-app-menu-popover" data-start-menu-popover>
+        <button type="button" class="local-md-app-menu-item" data-start-open>Open Markdown…<kbd>⌘O</kbd></button>
+        ${pwaCanOfferInstall() ? '<button type="button" class="local-md-app-menu-item" data-start-install>Install Markleft</button>' : ""}
+        <hr class="local-md-app-menu-separator">
+        <div class="local-md-app-menu-label">Open recent</div>
+        ${recent.length > 0 ? recent.map((item, index) => `<button type="button" class="local-md-app-menu-item" data-start-recent="${index}">${escapeHtml(item.name)}</button>`).join("") : '<button type="button" class="local-md-app-menu-item" disabled>No recent documents</button>'}
+        <hr class="local-md-app-menu-separator">
+        <button type="button" class="local-md-app-menu-item" data-start-new-window>New Markleft window</button>
+      </div>
+    </div>
+    <div class="local-md-mode-toggle" hidden aria-hidden="true"></div>
+    <div class="local-md-save-menu" hidden aria-hidden="true"></div>
+  `;
   const shell = document.createElement("main");
   shell.className = "markleft-pwa-start";
   shell.innerHTML = `
@@ -114,7 +185,40 @@ async function renderStartScreen(message = "Open a local Markdown file to begin.
     </section>
     ${recent.length > 0 ? recentMarkup(recent) : ""}
   `;
-  document.body.append(shell);
+  document.body.append(toolbar, shell);
+  const startMenu = toolbar.querySelector<HTMLElement>(".markleft-pwa-start-menu");
+  const startMenuTrigger = toolbar.querySelector<HTMLButtonElement>("[data-start-menu-trigger]");
+  const closeStartMenu = () => {
+    startMenu?.classList.remove("local-md-app-menu-open");
+    startMenuTrigger?.setAttribute("aria-expanded", "false");
+  };
+  startMenuTrigger?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = !startMenu?.classList.contains("local-md-app-menu-open");
+    startMenu?.classList.toggle("local-md-app-menu-open", open);
+    startMenuTrigger?.setAttribute("aria-expanded", String(open));
+  });
+  toolbar.querySelector<HTMLButtonElement>("[data-start-open]")?.addEventListener("click", () => {
+    closeStartMenu();
+    void openFromPicker();
+  });
+  toolbar.querySelector<HTMLButtonElement>("[data-start-install]")?.addEventListener("click", () => {
+    closeStartMenu();
+    void promptToInstall();
+  });
+  toolbar.querySelectorAll<HTMLButtonElement>("[data-start-recent]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = recent[Number(button.dataset.startRecent)];
+      if (item) void openIncomingDocument(item.handle, item.directory);
+    });
+  });
+  toolbar.querySelector<HTMLButtonElement>("[data-start-new-window]")?.addEventListener("click", () => {
+    closeStartMenu();
+    openNewMarkleftWindow();
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!startMenu?.contains(event.target as Node)) closeStartMenu();
+  });
   shell.querySelector<HTMLButtonElement>("[data-open-markdown]")?.addEventListener("click", () => {
     void openFromPicker();
   });
@@ -125,6 +229,79 @@ async function renderStartScreen(message = "Open a local Markdown file to begin.
       if (item) void openIncomingDocument(item.handle, item.directory);
     });
   });
+  refreshInstallPromotion(shell);
+}
+
+function uiChevronDown(): string {
+  return '<svg class="local-md-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>';
+}
+
+function installPwaInstallPromotion(): void {
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event as PwaInstallPromptEvent;
+    refreshInstallPromotion();
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    try {
+      window.localStorage.removeItem(installNudgeDismissedAtKey);
+    } catch {
+      // The installation is still complete if storage is unavailable.
+    }
+    refreshInstallPromotion();
+  });
+}
+
+async function promptToInstall(): Promise<void> {
+  const prompt = deferredInstallPrompt;
+  if (!prompt) return;
+  deferredInstallPrompt = null;
+  refreshInstallPromotion();
+  try {
+    const result = await prompt.prompt();
+    const choice = await prompt.userChoice.catch(() => result);
+    if (choice?.outcome === "dismissed") dismissInstallNudge();
+  } catch {
+    // The browser owns the prompt and can reject it when its state changes.
+  }
+}
+
+function dismissInstallNudge(): void {
+  try {
+    window.localStorage.setItem(installNudgeDismissedAtKey, String(Date.now()));
+  } catch {
+    // A session-only dismissal is still respected by removing the visible card.
+  }
+  refreshInstallPromotion();
+}
+
+function refreshInstallPromotion(startScreen?: HTMLElement): void {
+  document.querySelectorAll("[data-markleft-install-promotion]").forEach((element) => element.remove());
+  if (!pwaShouldShowInstallNudge()) return;
+
+  const editorIsOpen = document.querySelector(".local-md-shell") !== null;
+  const previewOnly = !pwaCanOfferInstall();
+  const promotion = document.createElement("section");
+  promotion.dataset.markleftInstallPromotion = "true";
+  promotion.className = `markleft-pwa-install-promotion ${editorIsOpen ? "markleft-pwa-install-nudge" : "markleft-pwa-install-card"}`;
+  promotion.innerHTML = `
+    <span class="markleft-pwa-install-glyph" aria-hidden="true">⇩</span>
+    <div class="markleft-pwa-install-copy">
+      <strong>Use Markleft like an app</strong>
+      <p>Open Markdown from Finder, keep recent documents, and work in its own window.</p>
+      ${previewOnly ? '<span class="markleft-pwa-install-preview">Local preview</span>' : ""}
+    </div>
+    <div class="markleft-pwa-install-actions">
+      <button type="button" class="markleft-pwa-install-action" data-install-markleft${previewOnly ? " disabled" : ""}>Install Markleft</button>
+      <button type="button" class="markleft-pwa-install-dismiss" data-dismiss-install>Not now</button>
+    </div>
+  `;
+  promotion.querySelector<HTMLButtonElement>("[data-install-markleft]")?.addEventListener("click", () => {
+    void promptToInstall();
+  });
+  promotion.querySelector<HTMLButtonElement>("[data-dismiss-install]")?.addEventListener("click", dismissInstallNudge);
+  (editorIsOpen ? document.body : startScreen ?? document.body).append(promotion);
 }
 
 function recentMarkup(recent: RecentPwaDocument[]): string {
@@ -190,6 +367,7 @@ async function openDocument(handle: PwaFileHandle, directory?: PwaDirectoryHandl
       },
     });
     hasOpenDocument = true;
+    refreshInstallPromotion();
   } catch (error) {
     await renderStartScreen(`Could not open ${handle.name}: ${errorMessage(error)}`);
   }
@@ -212,6 +390,7 @@ async function openRemoteDocument(url: string): Promise<void> {
     });
     document.title = `Markleft — ${host.displayName}`;
     hasOpenDocument = true;
+    refreshInstallPromotion();
   } catch (error) {
     await renderStartScreen(`Could not open remote Markdown: ${errorMessage(error)}`);
   }
@@ -322,6 +501,17 @@ function installStyles(): void {
     .markleft-pwa-start { min-height: 100vh; display: grid; place-content: center; gap: 18px; padding: 32px; background: #f4f1e8; color: #19202a; }
     .markleft-pwa-card, .markleft-pwa-recents { width: min(560px, calc(100vw - 64px)); box-sizing: border-box; background: #fffdf8; border: 1px solid #d9d1c2; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgb(33 29 20 / 8%); }
     .markleft-pwa-card h1 { margin: 0 0 12px; font-size: 28px; line-height: 1.15; }.markleft-pwa-card p { line-height: 1.5; }.markleft-pwa-eyebrow { color: #7b5535; font-size: 12px; font-weight: 700; letter-spacing: .12em; }.markleft-pwa-note { margin-top: 20px; color: #666; font-size: 13px; }.markleft-pwa-recents h2 { margin: 0 0 10px; font-size: 16px; }.markleft-pwa-recents ul, .markleft-pwa-file-list { margin: 0; padding: 0; list-style: none; }.markleft-pwa-recents button, .markleft-pwa-file-list button { width: 100%; border: 0; background: transparent; padding: 10px 0; color: #384d5e; text-align: left; cursor: pointer; font: inherit; }.markleft-pwa-recents button:hover, .markleft-pwa-file-list button:hover { text-decoration: underline; }.markleft-pwa-drop-overlay { position: fixed; z-index: 10000; inset: 18px; display: grid; place-items: center; border: 3px dashed #384d5e; border-radius: 16px; background: rgb(244 241 232 / 92%); color: #384d5e; font-size: 22px; font-weight: 700; pointer-events: none; }.markleft-pwa-drop-overlay[hidden] { display: none; }
+    .markleft-pwa-install-promotion { box-sizing: border-box; border: 1px solid #c5b8a3; border-radius: 14px; background: linear-gradient(135deg, #fffdf8, #f3ede2); box-shadow: 0 16px 42px rgb(40 32 20 / 18%); color: #26313a; }
+    .markleft-pwa-install-card { width: min(560px, calc(100vw - 64px)); display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 18px 20px; }
+    .markleft-pwa-install-nudge { position: fixed; z-index: 90; right: 22px; bottom: 22px; width: min(390px, calc(100vw - 44px)); display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 16px; animation: markleft-pwa-install-enter 380ms cubic-bezier(.2,.8,.2,1) both; }
+    .markleft-pwa-install-glyph { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: #3a5061; color: #fffdf8; font-size: 25px; font-weight: 700; line-height: 1; animation: markleft-pwa-install-bob 2.4s ease-in-out infinite; }
+    .markleft-pwa-install-copy strong { display: block; font-size: 15px; }.markleft-pwa-install-copy p { margin: 4px 0 0; color: #5c6470; font-size: 13px; line-height: 1.4; }
+    .markleft-pwa-install-preview { display: inline-block; margin-top: 7px; border-radius: 999px; background: #e4dbcb; color: #6b5a41; font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 3px 7px; text-transform: uppercase; }
+    .markleft-pwa-install-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }.markleft-pwa-install-nudge .markleft-pwa-install-actions { grid-column: 2; justify-content: flex-start; }
+    button.markleft-pwa-install-action { border-color: #3a5061; background: #3a5061; color: #fffdf8; font-size: 13px; font-weight: 650; white-space: nowrap; } button.markleft-pwa-install-action:hover, button.markleft-pwa-install-action:focus-visible { border-color: #263b4a; background: #263b4a; color: #fffdf8; }
+    button.markleft-pwa-install-dismiss { border: 0; background: transparent; color: #66717a; font-size: 13px; white-space: nowrap; } button.markleft-pwa-install-dismiss:hover, button.markleft-pwa-install-dismiss:focus-visible { background: transparent; color: #26313a; text-decoration: underline; }
+    @keyframes markleft-pwa-install-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } @keyframes markleft-pwa-install-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+    @media (max-width: 620px) { .markleft-pwa-install-card { grid-template-columns: 44px minmax(0, 1fr); }.markleft-pwa-install-card .markleft-pwa-install-actions { grid-column: 2; justify-content: flex-start; } } @media (prefers-reduced-motion: reduce) { .markleft-pwa-install-nudge, .markleft-pwa-install-glyph { animation: none; } }
   `;
   document.head.append(style);
 }

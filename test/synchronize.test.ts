@@ -7,6 +7,22 @@ import { syncRenderedToMarkdown, type SyncState } from "../src/editor/synchroniz
 import { stampBlocks } from "../src/editor/blocks";
 import { documentBlockIds, stripDocumentBlockIds } from "../src/roundtrip/block-ids";
 
+test("rendered sync restores an authored relative image source after PWA blob resolution", async () => {
+  const body = "![Review loop](./docs/landing-review-loop-v4.svg)";
+  const rendered = document.createElement("article");
+  rendered.innerHTML = await markdownToHtml(body);
+  const image = rendered.querySelector("img");
+  if (!image) throw new Error("Expected rendered image");
+  image.src = "blob:http://localhost:4174/da133918-12ad-4211-936b-b86f15444aa9";
+  image.dataset.markleftMarkdownSource = "./docs/landing-review-loop-v4.svg";
+
+  const state: SyncState = { markdown: body, body, frontmatter: "", dirty: false, syncCount: 0 };
+  await syncRenderedToMarkdown(rendered, state);
+
+  expect(state.body).toContain("![Review loop](./docs/landing-review-loop-v4.svg)");
+  expect(state.body).not.toContain("blob:http://localhost:4174/");
+});
+
 test("rendered sync preserves suggestion refs and definitions without rendered footnote sections", async () => {
   const body = [
     "Markleft is a footnote-based annotation format for Markdown.[^suggest-block-11778-743d]",

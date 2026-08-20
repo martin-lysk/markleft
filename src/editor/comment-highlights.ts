@@ -60,7 +60,11 @@ export function resolveSelectionBlockEndToSourcePosition(
   return sourceRange?.end ?? null;
 }
 
-export function decorateRenderedComments(root: HTMLElement, markdown: string, activeCommentId: string | null): void {
+export function decorateRenderedComments(
+  root: HTMLElement,
+  markdown: string,
+  activeCommentId: string | null,
+): void {
   const comments = parseComments(markdown);
   prepareRenderedFootnotes(root, comments);
   clearCommentHighlights();
@@ -84,7 +88,11 @@ export function decorateRenderedComments(root: HTMLElement, markdown: string, ac
   }
 }
 
-export function activeCommentIdFromSelection(root: HTMLElement, markdown: string, selection: Selection | null): string | null {
+export function activeCommentIdFromSelection(
+  root: HTMLElement,
+  markdown: string,
+  selection: Selection | null,
+): string | null {
   if (!selection || selection.rangeCount === 0) return null;
   const caretRange = selection.getRangeAt(0).cloneRange();
   if (!root.contains(caretRange.commonAncestorContainer)) return null;
@@ -92,13 +100,20 @@ export function activeCommentIdFromSelection(root: HTMLElement, markdown: string
   const comments = parseComments(markdown).filter((comment) => comment.kind !== "dangling");
   const containing = comments
     .map((comment) => ({ comment, range: renderedRangeForComment(root, markdown, comment) }))
-    .filter((candidate): candidate is { comment: Exclude<ParsedComment, { kind: "dangling" }>; range: Range } =>
-      Boolean(candidate.range),
+    .filter(
+      (
+        candidate,
+      ): candidate is { comment: Exclude<ParsedComment, { kind: "dangling" }>; range: Range } =>
+        Boolean(candidate.range),
     )
     .filter((candidate) => rangesOverlap(root, candidate.range, caretRange));
 
   if (containing.length > 0) {
-    return containing.sort((left, right) => left.range.toString().length - right.range.toString().length)[0]?.comment.id ?? null;
+    return (
+      containing.sort(
+        (left, right) => left.range.toString().length - right.range.toString().length,
+      )[0]?.comment.id ?? null
+    );
   }
 
   const anchor = closestCommentAnchor(caretRange);
@@ -110,10 +125,10 @@ export function renderedCommentAnchorRect(
   markdown: string,
   comment: Exclude<ParsedComment, { kind: "dangling" }>,
 ): DOMRect | null {
-  if (comment.kind === "image") {
-    const anchor = root.querySelector<HTMLElement>(`.local-md-image-comment-anchor[data-comment-id="${CSS.escape(comment.id)}"]`);
-    return anchor?.getBoundingClientRect() ?? null;
-  }
+  const anchor = root.querySelector<HTMLElement>(
+    `.local-md-comment-anchor[data-comment-id="${CSS.escape(comment.id)}"]`,
+  );
+  if (anchor) return anchor.getBoundingClientRect();
 
   const range = renderedRangeForComment(root, markdown, comment);
   if (!range) return null;
@@ -146,7 +161,9 @@ function prepareRenderedFootnotes(root: HTMLElement, comments: ParsedComment[]):
       const id = commentIdFromFootnoteId(item.id);
       if (id && localIds.has(id)) item.hidden = true;
     }
-    const hasVisibleItems = Array.from(footnotes.querySelectorAll("li")).some((item) => !item.hidden);
+    const hasVisibleItems = Array.from(footnotes.querySelectorAll("li")).some(
+      (item) => !item.hidden,
+    );
     if (!hasVisibleItems) footnotes.hidden = true;
   }
 }
@@ -183,9 +200,12 @@ function codeRangeForComment(
   const sourceCode = codeBlocks.find((code) => code.start === comment.codeSourceStart);
   if (!sourceCode) return null;
 
-  if (isMermaidInfo(sourceCode.info)) return mermaidRangeForComment(root, codeBlocks, sourceCode, comment);
+  if (isMermaidInfo(sourceCode.info))
+    return mermaidRangeForComment(root, codeBlocks, sourceCode, comment);
 
-  const nonMermaidIndex = codeBlocks.filter((code) => !isMermaidInfo(code.info) && code.start < sourceCode.start).length;
+  const nonMermaidIndex = codeBlocks.filter(
+    (code) => !isMermaidInfo(code.info) && code.start < sourceCode.start,
+  ).length;
   const codeElement = Array.from(root.querySelectorAll<HTMLElement>("pre code"))[nonMermaidIndex];
   if (!codeElement) return null;
   const codeText = codeElement.textContent ?? "";
@@ -200,11 +220,15 @@ function mermaidRangeForComment(
   sourceCode: ReturnType<typeof findCodeBlockAnchors>[number],
   comment: Extract<ParsedComment, { kind: "code" }>,
 ): Range | null {
-  const mermaidIndex = codeBlocks.filter((code) => isMermaidInfo(code.info) && code.start < sourceCode.start).length;
+  const mermaidIndex = codeBlocks.filter(
+    (code) => isMermaidInfo(code.info) && code.start < sourceCode.start,
+  ).length;
   const figure = Array.from(root.querySelectorAll<HTMLElement>(".local-md-mermaid"))[mermaidIndex];
   if (!figure) return null;
   const start = textOffsetForLineCol(sourceCode.code, comment.line, comment.col);
-  const sourceText = sourceCode.code.slice(start, Math.min(sourceCode.code.length, start + comment.length)).trim();
+  const sourceText = sourceCode.code
+    .slice(start, Math.min(sourceCode.code.length, start + comment.length))
+    .trim();
   if (!sourceText) return null;
   return textRangeForFirstMatch(figure, sourceText);
 }
@@ -396,7 +420,10 @@ function clearCommentHighlights(): void {
   }
 }
 
-function bucketForComment(comment: Exclude<ParsedComment, { kind: "dangling" }>, active: boolean): string {
+function bucketForComment(
+  comment: Exclude<ParsedComment, { kind: "dangling" }>,
+  active: boolean,
+): string {
   const prefix = comment.kind === "block" ? "local-md-comment-block" : "local-md-comment-range";
   if (active) return `${prefix}-active`;
   return `${prefix}-${commentState(comment)}`;
@@ -411,7 +438,11 @@ function highlightPriority(name: string): number {
 
 function commentState(comment: ParsedComment | undefined): "broken" | "current" | "stale" {
   if (!comment) return "broken";
-  return comment.missingDefinition ? "broken" : comment.kind !== "dangling" && comment.stale ? "stale" : "current";
+  return comment.missingDefinition
+    ? "broken"
+    : comment.kind !== "dangling" && comment.stale
+      ? "stale"
+      : "current";
 }
 
 function supportsCustomHighlights(): boolean {
@@ -419,10 +450,22 @@ function supportsCustomHighlights(): boolean {
 }
 
 function rangesOverlap(root: HTMLElement, commentRange: Range, selectionRange: Range): boolean {
-  const commentStart = logicalTextOffset(root, commentRange.startContainer, commentRange.startOffset);
+  const commentStart = logicalTextOffset(
+    root,
+    commentRange.startContainer,
+    commentRange.startOffset,
+  );
   const commentEnd = logicalTextOffset(root, commentRange.endContainer, commentRange.endOffset);
-  const selectionStart = logicalTextOffset(root, selectionRange.startContainer, selectionRange.startOffset);
-  const selectionEnd = logicalTextOffset(root, selectionRange.endContainer, selectionRange.endOffset);
+  const selectionStart = logicalTextOffset(
+    root,
+    selectionRange.startContainer,
+    selectionRange.startOffset,
+  );
+  const selectionEnd = logicalTextOffset(
+    root,
+    selectionRange.endContainer,
+    selectionRange.endOffset,
+  );
   if (selectionRange.collapsed) {
     return selectionStart >= commentStart && selectionStart <= commentEnd;
   }

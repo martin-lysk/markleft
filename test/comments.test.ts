@@ -509,6 +509,22 @@ test("suggestions referenced only from an image comment still target the related
   );
 });
 
+test("associates an image marker immediately following its image on the same line", () => {
+  const image = "![Review loop](./docs/landing-review-loop-v3.svg)";
+  const markdown = [
+    `${image}[^image-4949-3754-67993-d717]`,
+    "",
+    "[^image-4949-3754-67993-d717]: Can we use the real logos here?",
+  ].join("\n");
+
+  const [comment] = parseComments(markdown);
+
+  expect(comment).toMatchObject({ kind: "image", x: 4949, y: 3754 });
+  if (comment?.kind !== "image") throw new Error("Expected image comment");
+  expect(comment.imageSourceStart).toBe(0);
+  expect(comment.imageMarkdown).toBe(image);
+});
+
 test("creates image comments under Markdown image anchors", () => {
   const source = "Before\n\n![Alt text](photo.png)\n\nAfter\n";
   const imageStart = source.indexOf("![Alt text]");

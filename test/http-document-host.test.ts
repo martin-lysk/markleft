@@ -24,6 +24,22 @@ describe("HttpDocumentHost", () => {
     await expect(host.write("# Changed\n")).rejects.toBeInstanceOf(HttpDocumentReadOnlyError);
   });
 
+  it("opens GitHub blob URLs through their raw Markdown counterpart", async () => {
+    const requestedUrl = "https://github.com/martin-lysk/markleft/blob/main/README.md?plain=1#installation";
+    let fetchedUrl = "";
+    const host = await HttpDocumentHost.open(requestedUrl, async (input) => {
+      fetchedUrl = String(input);
+      return new Response("# Markleft\n", { status: 200 });
+    });
+
+    expect(fetchedUrl).toBe("https://raw.githubusercontent.com/martin-lysk/markleft/main/README.md");
+    expect(host.source.requestedUrl).toBe(requestedUrl);
+    expect(host.source.canonicalUrl).toBe("https://raw.githubusercontent.com/martin-lysk/markleft/main/README.md");
+    await expect(host.resolveAsset("docs/pwa-flow.svg")).resolves.toBe(
+      "https://raw.githubusercontent.com/martin-lysk/markleft/main/docs/pwa-flow.svg",
+    );
+  });
+
   it("rejects non-HTTPS and failed remote requests", async () => {
     await expect(HttpDocumentHost.open("http://example.com/review.md")).rejects.toThrow("HTTPS");
     await expect(

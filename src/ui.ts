@@ -74,7 +74,11 @@ import {
 import { createRoundtripReportCase, reportFileName } from "./roundtrip/report";
 import { buildAddressAnnotationsPrompt } from "./host/prompt-builder";
 import type { MarkleftDocumentHost } from "./host/document-host";
-import { resolveDocumentAssets } from "./host/document-assets";
+import {
+  resolveDocumentAssets,
+  restoreAuthoredBlobImageSources,
+  restoreAuthoredImageSources,
+} from "./host/document-assets";
 import { BrowserFileWatch } from "./host/browser/file-watch";
 import { hasBrowserDirectoryPicker, saveWithBrowserHost } from "./host/browser/save-action";
 
@@ -175,6 +179,10 @@ export async function mountApp(
   const commentDrafts = new Map<string, string>();
   const replyDrafts = new Map<string, string>();
   const openReplyComposerIds = new Set<string>();
+  let pendingCommentAnchor: {
+    commentId: string;
+    bottom: number;
+  } | null = null;
   const closeEmptyReplyComposerStatesExcept = (activeId: string | null) => {
     for (const id of openReplyComposerIds) {
       if (id !== activeId && !(replyDrafts.get(id)?.trim().length ?? 0)) {
@@ -221,19 +229,12 @@ export async function mountApp(
         </span>
         <strong>Local Markdown</strong>
       </div>
-      <div class="local-md-mode-menu" aria-label="Editor mode">
-        <button type="button" class="local-md-toolbar-button local-md-mode-trigger" data-mode-trigger aria-expanded="false" aria-label="Editor mode" title="Editor mode">
-          ${uiIcon("suggestion")}
-          <span data-mode-label>Suggestions</span>
-          ${uiIcon("chevron-down")}
-        </button>
-        <div class="local-md-mode-popover">
-          <button type="button" data-testid="mode-rendered" aria-pressed="false" title="Editing">${uiIcon("pencil")}<span>Editing</span></button>
-          <button type="button" data-testid="mode-review" aria-pressed="true" title="Suggestions">${uiIcon("suggestion")}<span>Suggestions</span></button>
-          <button type="button" data-testid="mode-markdown" aria-pressed="false" title="Markdown">${uiIcon("markdown")}<span>Markdown</span></button>
-        </div>
+      <div class="local-md-mode-toggle" aria-label="Editor mode" role="group">
+        <button type="button" data-testid="mode-markdown" aria-pressed="false">Markdown</button>
+        <button type="button" data-testid="mode-rendered" aria-pressed="false">Original</button>
+        <button type="button" data-testid="mode-review" aria-pressed="true">Suggestions</button>
       </div>
-      <div class="local-md-actions">
+      <div class="local-md-actions" hidden>
         <div class="local-md-format-controls" data-toolbar-format-controls>
         <div class="local-md-format-menu">
           <button type="button" class="local-md-toolbar-button local-md-format-trigger" data-format-trigger aria-expanded="false" aria-label="Paragraph style" title="Paragraph style">
@@ -603,7 +604,19 @@ export async function mountApp(
     renderCommentCards();
     layoutCommentCards();
     for (const image of rendered.querySelectorAll<HTMLImageElement>("img")) {
-      if (!image.complete) image.addEventListener("load", layoutCommentCards, { once: true });
+      if (!image.complete) {
+        image.addEventListener(
+          "load",
+          () => {
+            // Image comment coordinates only make sense once the browser has a real
+            // image box. Re-run the promotion from footnote marker to image overlay
+            // after asynchronous sources (including blob URLs) have loaded.
+            positionImageCommentAnchors(rendered, state, activateReviewSuggestionForComment);
+            layoutCommentCards();
+          },
+          { once: true },
+        );
+      }
     }
     requestAnimationFrame(layoutCommentCards);
   };
@@ -662,7 +675,7 @@ export async function mountApp(
         } else {
           const imageComparison =
             suggestion.operation === "update"
-              ? reviewImageComparisonForTarget(targetBlock, snippet, suggestion.id)
+              ? reviewImageComparisonForTarget(targetBlock, snippet, suggestion.id, activateReviewSuggestionAtPointer)
               : null;
           const replacement =
             imageComparison ?? reviewSuggestionElementForTarget(targetBlock, snippet);
@@ -701,7 +714,12 @@ export async function mountApp(
       );
       snippet.querySelector("section[data-footnotes]")?.remove();
       renderLocalNoteReferenceWidgets(snippet);
-      const imageComparison = reviewImageComparisonForTarget(targetBlock, snippet, suggestion.id);
+      const imageComparison = reviewImageComparisonForTarget(
+        targetBlock,
+        snippet,
+        suggestion.id,
+        activateReviewSuggestionAtPointer,
+      );
       const replacement = imageComparison ?? reviewSuggestionElementForTarget(targetBlock, snippet);
       replacement.className = "local-md-review-suggestion";
       if (imageComparison) replacement.classList.add("local-md-image-comparison");
@@ -783,6 +801,7 @@ export async function mountApp(
       const id = region.dataset.suggestionId;
       if (!id) continue;
       const clone = region.cloneNode(true) as HTMLElement;
+      restoreAuthoredImageSources(clone);
       restoreReviewCommentReferences(clone);
       clone.querySelector("section[data-footnotes]")?.remove();
       clone.querySelector(".local-md-review-empty-suggestion")?.remove();
@@ -790,9 +809,10 @@ export async function mountApp(
       const rawSuggestionMarkdown = stripReviewSuggestionReferences(
         unescapeCommentReferences(await htmlToMarkdown(reviewSuggestionRegionHtml(clone))),
       ).trim();
+      const previousSuggestionMarkdown = suggestionsById.get(id)?.bodyMarkdown ?? "";
       const suggestionMarkdown = preserveReviewSourceWrapper(
-        suggestionsById.get(id)?.bodyMarkdown ?? "",
-        rawSuggestionMarkdown,
+        previousSuggestionMarkdown,
+        restoreAuthoredBlobImageSources(previousSuggestionMarkdown, rawSuggestionMarkdown),
       );
       nextBody = editCommentBody(nextBody, id, suggestionMarkdown);
     }
@@ -891,7 +911,7 @@ export async function mountApp(
       const wasActive = region.classList.contains("local-md-review-suggestion-active");
       region.classList.toggle("local-md-review-suggestion-active", active);
       if (region.classList.contains("local-md-image-comparison") && active !== wasActive) {
-        setImageComparisonReveal(region, active ? 50 : 0);
+        setImageComparisonReveal(region, active ? 50 : 100);
       }
     }
   };
@@ -905,6 +925,23 @@ export async function mountApp(
     if (state.reviewDiffMode === "active") void refreshReviewDiffDecorations();
     renderCommentCards();
     layoutCommentCards();
+  };
+
+  const activateReviewSuggestionAtPointer = (
+    suggestionId: string,
+    comparison: HTMLElement,
+    clientX: number,
+  ): void => {
+    if (state.mode !== "review") return;
+    activeReviewSuggestionId = suggestionId;
+    updateReviewSuggestionActiveClasses();
+    if (state.reviewDiffMode === "active") void refreshReviewDiffDecorations();
+    renderCommentCards();
+    layoutCommentCards();
+    const stage = comparison.querySelector<HTMLElement>(".local-md-image-comparison-stage");
+    const rect = stage?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
+    setImageComparisonReveal(comparison, ((clientX - rect.left) / rect.width) * 100);
   };
 
   const updateMarkdownEditorSize = () => {
@@ -1695,10 +1732,14 @@ export async function mountApp(
     );
     const positionedMode =
       state.mode === "rendered" || state.mode === "review" || state.mode === "markdown";
+    const compactCommentLayout =
+      positionedMode && cards.length > 0 && window.matchMedia("(max-width: 860px)").matches;
     commentsColumn.classList.toggle(
       "local-md-comments-positioned",
       positionedMode && cards.length > 0,
     );
+    commentsColumn.classList.toggle("local-md-comments-compact", compactCommentLayout);
+    workspace.classList.toggle("local-md-workspace-compact-comments", compactCommentLayout);
     if (!positionedMode || cards.length === 0) {
       commentsColumn.style.minHeight = "";
       for (const card of cards) card.style.removeProperty("--comment-y");
@@ -1714,18 +1755,25 @@ export async function mountApp(
           `.local-md-comment-card[data-card-id="comment:${CSS.escape(comment.id)}"]`,
         );
         if (!card || comment.kind === "dangling") return null;
-        const desiredTop =
+        const renderedAnchor =
           state.mode === "review"
             ? (reviewCommentAnchorRect(
                 rendered,
                 reviewAnalysis?.suggestionIdByCommentId.get(comment.id),
-              )?.top ??
-                renderedCommentAnchorRect(rendered, state.body, comment)?.top ??
-                documentRect.top) - documentRect.top
+              ) ?? renderedCommentAnchorRect(rendered, state.body, comment))
             : state.mode === "rendered"
-              ? (renderedCommentAnchorRect(rendered, state.body, comment)?.top ??
-                  documentRect.top) - documentRect.top
-              : markdownAnchorTop(editor, comment.markerSourceStart);
+              ? renderedCommentAnchorRect(rendered, state.body, comment)
+              : null;
+        const pendingAnchorBottom =
+          pendingCommentAnchor?.commentId === comment.id ? pendingCommentAnchor.bottom : null;
+        const desiredTop =
+          state.mode === "markdown"
+            ? markdownAnchorTop(editor, comment.markerSourceStart)
+            : compactCommentLayout
+              ? (renderedAnchor?.bottom ?? pendingAnchorBottom ?? documentRect.top) -
+                documentRect.top +
+                5
+              : (renderedAnchor?.top ?? documentRect.top) - documentRect.top;
         return {
           card,
           keyId: comment.id,
@@ -1921,19 +1969,9 @@ export async function mountApp(
   };
 
   const updateModeTrigger = (mode: AppState["mode"]) => {
-    const labels: Record<AppState["mode"], string> = {
-      rendered: "Editing",
-      review: "Suggestions",
-      markdown: "Markdown",
-    };
-    const icons: Record<AppState["mode"], "markdown" | "pencil" | "suggestion"> = {
-      rendered: "pencil",
-      review: "suggestion",
-      markdown: "markdown",
-    };
-    const trigger = toolbarActions.querySelector<HTMLButtonElement>("[data-mode-trigger]");
-    if (!trigger) return;
-    trigger.innerHTML = `${uiIcon(icons[mode])}<span data-mode-label>${labels[mode]}</span>${uiIcon("chevron-down")}`;
+    renderedButton.setAttribute("aria-pressed", String(mode === "rendered"));
+    reviewButton.setAttribute("aria-pressed", String(mode === "review"));
+    markdownButton.setAttribute("aria-pressed", String(mode === "markdown"));
   };
 
   const applyMarkdownCommand = (command: string) => {
@@ -2050,11 +2088,19 @@ export async function mountApp(
     }
 
     const selection = document.getSelection();
+    const selectionRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const selectionAnchor = selectionRange ? selectionFocusLineRect(selection, selectionRange) : null;
     if (state.mode === "review") {
       const reviewComment = createReviewSuggestionComment(rendered, state.body, selection);
       if (reviewComment) {
         state.body = reviewComment.markdown;
         markNewestCommentAsDraft(previousIds);
+        if (selectionAnchor && state.activeCommentId) {
+          pendingCommentAnchor = {
+            commentId: state.activeCommentId,
+            bottom: selectionAnchor.bottom,
+          };
+        }
         state.markdown = composeMarkdown(state);
         state.dirty = true;
         commitHistory();
@@ -2081,6 +2127,12 @@ export async function mountApp(
         ? createRangeComment(state.body, selectedRange.start, selectedRange.end, "")
         : createBlockComment(state.body, blockEnd ?? state.body.length, "");
     markNewestCommentAsDraft(previousIds);
+    if (selectionAnchor && state.activeCommentId) {
+      pendingCommentAnchor = {
+        commentId: state.activeCommentId,
+        bottom: selectionAnchor.bottom,
+      };
+    }
     state.markdown = composeMarkdown(state);
     state.dirty = true;
     commitHistory();
@@ -2982,8 +3034,8 @@ function installApplicationMenu(toolbar: HTMLElement, source: MarkleftApplicatio
     if (event.key === "Escape") close();
   });
 
-  const modeMenu = toolbar.querySelector(".local-md-mode-menu");
-  toolbar.insertBefore(appMenu, modeMenu);
+  const modeToggle = toolbar.querySelector(".local-md-mode-toggle");
+  toolbar.insertBefore(appMenu, modeToggle);
 }
 
 function required<T extends Element = HTMLElement>(selector: string, root: ParentNode = document): T {
@@ -3355,6 +3407,7 @@ function reviewImageComparisonForTarget(
   target: HTMLElement,
   snippet: HTMLElement,
   suggestionId: string,
+  onStagePointerDown?: (suggestionId: string, comparison: HTMLElement, clientX: number) => void,
 ): HTMLElement | null {
   const originalImage = imageOnlyVisual(target);
   const suggestedImage = imageOnlyVisual(snippet);
@@ -3386,13 +3439,20 @@ function reviewImageComparisonForTarget(
 
   const slider = document.createElement("div");
   slider.className = "local-md-image-comparison-slider";
+  slider.dataset.localMdWrapper = "true";
+  slider.contentEditable = "false";
   slider.tabIndex = 0;
   slider.setAttribute("role", "slider");
-  slider.setAttribute("aria-label", "Reveal original image");
+  slider.setAttribute("aria-label", "Reveal suggested image");
   slider.setAttribute("aria-valuemin", "0");
   slider.setAttribute("aria-valuemax", "100");
   slider.setAttribute("aria-valuenow", "0");
-  slider.innerHTML = '<span class="local-md-image-comparison-knob" aria-hidden="true"></span>';
+  slider.innerHTML = `
+    <span class="local-md-image-comparison-label" aria-hidden="true">
+      <span>New</span><span>Before</span>
+    </span>
+    <span class="local-md-image-comparison-knob" aria-hidden="true"></span>
+  `;
 
   const updateFromPointer = (clientX: number) => {
     const rect = stage.getBoundingClientRect();
@@ -3404,6 +3464,7 @@ function reviewImageComparisonForTarget(
     event.stopPropagation();
     updateFromPointer(event.clientX);
     const pointerId = event.pointerId;
+    slider.setPointerCapture(pointerId);
     const move = (moveEvent: PointerEvent) => {
       if (moveEvent.pointerId !== pointerId) return;
       moveEvent.preventDefault();
@@ -3411,14 +3472,17 @@ function reviewImageComparisonForTarget(
     };
     const finish = (finishEvent: PointerEvent) => {
       if (finishEvent.pointerId !== pointerId) return;
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", finish);
-      window.removeEventListener("pointercancel", finish);
+      finishEvent.stopPropagation();
+      if (slider.hasPointerCapture(pointerId)) slider.releasePointerCapture(pointerId);
+      slider.removeEventListener("pointermove", move);
+      slider.removeEventListener("pointerup", finish);
+      slider.removeEventListener("pointercancel", finish);
     };
-    window.addEventListener("pointermove", move, { passive: false });
-    window.addEventListener("pointerup", finish);
-    window.addEventListener("pointercancel", finish);
+    slider.addEventListener("pointermove", move, { passive: false });
+    slider.addEventListener("pointerup", finish);
+    slider.addEventListener("pointercancel", finish);
   });
+  slider.addEventListener("click", (event) => event.stopPropagation());
   slider.addEventListener("keydown", (event) => {
     const current = Number(slider.getAttribute("aria-valuenow") ?? "50");
     const next =
@@ -3437,9 +3501,27 @@ function reviewImageComparisonForTarget(
     setImageComparisonReveal(comparison, next);
   });
 
+  const activateAtPointer = (event: PointerEvent | MouseEvent) => {
+    if (
+      event.target instanceof Element &&
+      event.target.closest(".local-md-image-comparison-slider, .local-md-image-comment-anchor")
+    )
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    onStagePointerDown?.(suggestionId, comparison, event.clientX);
+  };
+  stage.addEventListener("pointerdown", activateAtPointer);
+  // A click is a second, reliable activation path after the editable surface
+  // has processed its selection event.
+  stage.addEventListener("click", activateAtPointer);
+
   stage.append(originalLayer, suggestionLayer, slider, markerLayer);
   comparison.append(stage);
-  setImageComparisonReveal(comparison, 0);
+  // A pending image suggestion is the default reading state. Activating it
+  // exposes the divider, while dragging left lets the reader inspect the old
+  // version underneath.
+  setImageComparisonReveal(comparison, 100);
   return comparison;
 }
 
@@ -3459,7 +3541,7 @@ function setImageComparisonReveal(comparison: HTMLElement, value: number): void 
   comparison.style.setProperty("--local-md-image-reveal", `${reveal}%`);
   const slider = comparison.querySelector<HTMLElement>(".local-md-image-comparison-slider");
   slider?.setAttribute("aria-valuenow", `${Math.round(reveal)}`);
-  slider?.setAttribute("aria-valuetext", `${Math.round(reveal)}% original image visible`);
+  slider?.setAttribute("aria-valuetext", `${Math.round(reveal)}% suggested image visible`);
 }
 
 function reviewSuggestionElementForTarget(target: HTMLElement, snippet: HTMLElement): HTMLElement {
@@ -4154,6 +4236,7 @@ function reviewOriginalBlockElements(root: HTMLElement): HTMLElement[] {
 
 async function markdownFromReviewBlockElement(block: HTMLElement): Promise<string> {
   const clone = block.cloneNode(true) as HTMLElement;
+  restoreAuthoredImageSources(clone);
   restoreReviewCommentReferences(clone);
   clone.querySelector("section[data-footnotes]")?.remove();
   return unescapeCommentReferences(await htmlToMarkdown(reviewSourceBlockHtml(clone))).trim();
@@ -4660,6 +4743,20 @@ function positionImageCommentAnchors(
       (comment) => comment.target === "bitmap" && comment.imageSourceStart === anchor.start,
     );
     if (image.dataset.markleftAssetPlaceholder === "true") {
+      for (const comment of imageComments) {
+        const marker = root.querySelector<HTMLElement>(
+          `.local-md-image-comment-anchor[data-comment-id="${CSS.escape(comment.id)}"]`,
+        );
+        if (marker) marker.hidden = true;
+      }
+      continue;
+    }
+    // Until an image has successfully decoded, its dimensions are unavailable. An
+    // absolutely positioned marker would then be laid out against a zero-height
+    // frame and look like it belongs in the document's top-left corner. Keep the
+    // original footnote marker hidden until the image's load event re-runs this
+    // function; broken and expired blob URLs remain hidden rather than misleading.
+    if (!image.complete || image.naturalWidth === 0) {
       for (const comment of imageComments) {
         const marker = root.querySelector<HTMLElement>(
           `.local-md-image-comment-anchor[data-comment-id="${CSS.escape(comment.id)}"]`,

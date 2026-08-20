@@ -1554,6 +1554,14 @@ function imageAnchorAt(markdown: string, position: number): ImageAnchor | null {
 
 function findImageAnchorBefore(markdown: string, position: number): ImageAnchor | null {
   const line = lineRangeAt(markdown, position);
+  // Markdown permits the image footnote reference immediately after the image
+  // on the same line: `![alt](image.svg)[^image-…]`. Check that line first;
+  // otherwise the marker is left as an ordinary footnote and appears at the
+  // image edge instead of being promoted into the positioned image overlay.
+  const sameLineImage = findImageAnchors(markdown)
+    .filter((image) => image.start >= line.start && image.end <= position)
+    .at(-1);
+  if (sameLineImage) return sameLineImage;
   let cursor = line.start;
   while (cursor > 0) {
     const previous = lineRangeAt(markdown, cursor - 1);

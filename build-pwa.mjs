@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const outputDirectory = "dist/pwa";
 const buildId = Date.now().toString(36);
@@ -31,4 +31,7 @@ await Promise.all([
 ]);
 
 await cp("pwa", outputDirectory, { recursive: true });
+const indexPath = `${outputDirectory}/index.html`;
+const index = await readFile(indexPath, "utf8");
+await writeFile(indexPath, index.replace("__MARKLEFT_PWA_BUILD__", buildId));
 console.log(`PWA written to ${outputDirectory}`);
