@@ -13,7 +13,12 @@
       .markleft-static-landing { max-width: 900px; margin: 48px auto; padding: 0 24px; color: #141414; font: 18px/1.6 system-ui, sans-serif; }
       .markleft-static-landing img { max-width: 100%; height: auto; }
       .markleft-static-landing h1, .markleft-static-landing h2 { line-height: 1.2; }
+      /* Keep the static document for crawlers and no-JS visitors. The PWA owns
+         the visible page whenever JavaScript is available, avoiding a landing
+         page flash before it restores recent files or opens the introduction. */
+      html.markleft-js .markleft-static-landing { display: none; }
     </style>
+    <script>document.documentElement.classList.add("markleft-js")</script>
   </head>
   <body>
     <main class="markleft-static-landing">__MARKLEFT_STATIC_LANDING__</main>
