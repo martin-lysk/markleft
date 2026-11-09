@@ -127,26 +127,36 @@ export async function findDocumentInRoot(
   target: PwaFileHandle,
   limit = maxEntriesPerScan,
 ): Promise<string[] | null> {
-  const queue: Array<{ directory: PwaDirectoryHandle; path: string[] }> = [{ directory: root, path: [] }];
+  const queue: Array<{ directory: PwaDirectoryHandle; path: string[] }> = [
+    { directory: root, path: [] },
+  ];
   let seen = 0;
 
   while (queue.length > 0 && seen < limit) {
     const current = queue.shift();
     if (!current) break;
-    for await (const entry of directoryEntries(current.directory)) {
-      seen += 1;
-      if (seen > limit) return null;
-      if (entry.kind === "directory") {
-        queue.push({ directory: entry as PwaDirectoryHandle, path: [...current.path, entry.name] });
-        continue;
+    try {
+      for await (const entry of directoryEntries(current.directory)) {
+        seen += 1;
+        if (seen > limit) return null;
+        if (entry.kind === "directory") {
+          queue.push({
+            directory: entry,
+            path: [...current.path, entry.name],
+          });
+          continue;
+        }
+        if (entry.kind !== "file" || entry.name !== target.name) continue;
+        try {
+          const candidate = await current.directory.getFileHandle(entry.name);
+          if (await sameEntry(candidate, target)) return [...current.path, entry.name];
+        } catch {
+          // The entry disappeared or its permission changed while scanning.
+        }
       }
-      if (entry.kind !== "file" || entry.name !== target.name) continue;
-      try {
-        const candidate = await current.directory.getFileHandle(entry.name);
-        if (await sameEntry(candidate, target)) return [...current.path, entry.name];
-      } catch {
-        // The entry disappeared or its permission changed while scanning.
-      }
+    } catch {
+      // Remembered folders and queued subfolders can disappear or lose access.
+      // Project assets are optional; keep looking without blocking file opening.
     }
   }
   return null;

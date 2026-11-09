@@ -57,6 +57,27 @@ class FakeDirectory implements PwaDirectoryHandle {
 }
 
 describe("PWA project access", () => {
+  class UnavailableDirectory extends FakeDirectory {
+    override async *values(): AsyncIterable<FakeDirectory | FakeFile> {
+      await Promise.reject(new DOMException("Directory no longer exists", "NotFoundError"));
+    }
+  }
+
+  it("ignores a remembered project root that no longer exists", async () => {
+    const opened = new FakeFile("review.md");
+    await expect(
+      findDocumentInRoot(new UnavailableDirectory("old-project"), opened),
+    ).resolves.toBeNull();
+  });
+
+  it("continues scanning accessible folders when a subfolder disappears", async () => {
+    const opened = new FakeFile("review.md");
+    const root = new FakeDirectory("repo")
+      .add(new UnavailableDirectory("removed-folder"))
+      .add(new FakeDirectory("docs").add(opened));
+    await expect(findDocumentInRoot(root, opened)).resolves.toEqual(["docs", "review.md"]);
+  });
+
   it("finds the exact Markdown handle rather than trusting a matching filename", async () => {
     const opened = new FakeFile("review.md");
     const other = new FakeFile("review.md");
