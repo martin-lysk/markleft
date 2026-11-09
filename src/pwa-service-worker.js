@@ -39,7 +39,14 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request)
         .then((response) => {
           if (response.ok) {
-            void caches.open(cacheName).then((cache) => cache.put(event.request, response.clone()));
+            // Clone before returning: the browser can consume the original immediately.
+            const cachedResponse = response.clone();
+            event.waitUntil(
+              caches
+                .open(cacheName)
+                .then((cache) => cache.put(event.request, cachedResponse))
+                .catch((error) => console.warn("Could not cache the application shell", error)),
+            );
           }
           return response;
         })
